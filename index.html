@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Portfolio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .header {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            pointer-events: auto;
+        }
+        .name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .title {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        .nav {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .nav-item {
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        .project-info {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+            pointer-events: auto;
+        }
+        .project-info.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .project-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .project-desc {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        .project-link {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #4a5af8;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        .project-link:hover {
+            background-color: #3a48d8;
+            transform: scale(1.05);
+        }
+        .controls-hint {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .progress-bar {
+            width: 200px;
+            height: 5px;
+            background-color: #111;
+            margin-top: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            width: 0%;
+            background-color: #4a5af8;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <h2>Loading Tim...</h2>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <div class="overlay">
+        <div class="header">
+            <div class="name">Timothy Park</div>
+            <div class="title">Developer & Project Manager</div>
+        </div>
+
+        <div class="nav">
+            <div class="nav-item" data-section="intro">Home</div>
+            <div class="nav-item" data-section="about">About</div>
+            <div class="nav-item" data-section="projects">Projects</div>
+            <div class="nav-item" data-section="contact">Contact</div>
+        </div>
+
+        <div class="controls-hint">
+            Use WASD or arrow keys to move around. Click on objects to explore.
+        </div>
+
+
+        <div class="project-info" id="project-info">
+            <h3 class="project-title">Exercise Counter</h3>
+            <p class="project-desc">Description TBD...</p>
+            <a href="#" class="project-link" target="_blank">View Project</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize Three.js
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x050505);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0x4a5af8, 2, 20);
+        pointLight.position.set(0, 2, 0);
+        scene.add(pointLight);
+
+        // Create environment and objects
+        const floorGeometry = new THREE.PlaneGeometry(50, 50, 20, 20);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x111111,
+            wireframe: true
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -1;
+        scene.add(floor);
+
+        // Create a grid of cubes
+        const cubes = [];
+        for(let i = -5; i <= 5; i += 2) {
+            for(let j = -5; j <= 5; j += 2) {
+                if(Math.random() > 0.7) continue; // Skip some positions randomly
+                
+                const height = Math.random() * 2 + 0.5;
+                const geometry = new THREE.BoxGeometry(1, height, 1);
+                const color = new THREE.Color(0x4a5af8);
+                
+                const material = new THREE.MeshStandardMaterial({ color });
+                const cube = new THREE.Mesh(geometry, material);
+                
+                cube.position.set(i, height/2 - 1, j);
+                cube.userData = {
+                    isInteractive: true,
+                    projectId: Math.floor(Math.random() * projects.length)
+                };
+                
+                scene.add(cube);
+                cubes.push(cube);
+            }
+        }
+
+        // Add some spheres as accent objects
+        for(let i = 0; i < 15; i++) {
+            const radius = Math.random() * 0.3 + 0.1;
+            const geometry = new THREE.SphereGeometry(radius, 16, 16);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0xff5252,
+                emissive: 0xff5252,
+                emissiveIntensity: 0.5
+            });
+            const sphere = new THREE.Mesh(geometry, material);
+            
+            sphere.position.set(
+                (Math.random() - 0.5) * 20,
+                Math.random() * 2,
+                (Math.random() - 0.5) * 20
+            );
+            
+            scene.add(sphere);
+        }
+
+        // Camera and controls setup
+        camera.position.set(6, 3, 6);
+        camera.lookAt(0, 0, 0);
+
+        let cameraTargetPosition = new THREE.Vector3(6, 3, 6);
+        let cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+        const cameraSmoothing = 0.05;
+
+        // projects to be filled in later...
+        const projects = [
+            {
+                title: "E-Commerce Platform",
+                description: "A full-featured online store with shopping cart, payment processing, and inventory management.",
+                link: "#"
+            },
+            {
+                title: "Mobile Banking App",
+                description: "Secure and intuitive banking application with transaction history, transfers, and bill payments.",
+                link: "#"
+            },
+            {
+                title: "Portfolio Website",
+                description: "Custom designed portfolio showcasing creative work with interactive elements and smooth animations.",
+                link: "#"
+            },
+            {
+                title: "Social Media Dashboard",
+                description: "Analytics tool for tracking engagement across multiple social platforms with data visualization.",
+                link: "#"
+            },
+            {
+                title: "Weather Application",
+                description: "Location-based weather forecasting with beautiful UI and animated weather conditions.",
+                link: "#"
+            }
+        ];
+
+        // Project info panel
+        const projectInfo = document.getElementById('project-info');
+        
+        function showProjectInfo(project) {
+            projectInfo.querySelector('.project-title').textContent = project.title;
+            projectInfo.querySelector('.project-desc').textContent = project.description;
+            projectInfo.querySelector('.project-link').href = project.link;
+            projectInfo.classList.add('active');
+        }
+        
+        function hideProjectInfo() {
+            projectInfo.classList.remove('active');
+        }
+
+        // Raycaster for object interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+        }
+        
+        function onClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            
+            for (let i = 0; i < intersects.length; i++) {
+                const object = intersects[i].object;
+                if (object.userData && object.userData.isInteractive) {
+                    const projectId = object.userData.projectId;
+                    showProjectInfo(projects[projectId]);
+                    
+                    // Animate camera to focus on this object
+                    const objectPos = object.position.clone();
+                    const cameraOffset = new THREE.Vector3(2, 1.5, 2);
+                    cameraTargetPosition = objectPos.clone().add(cameraOffset);
+                    cameraTargetLookAt = objectPos;
+                    
+                    // Highlight the clicked object
+                    object.material.emissive = new THREE.Color(0x4a5af8);
+                    object.material.emissiveIntensity = 0.5;
+                    
+                    setTimeout(() => {
+                        object.material.emissiveIntensity = 0;
+                    }, 1000);
+                    
+                    break;
+                }
+            }
+        }
+
+        // Navigation between sections
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const section = e.target.getAttribute('data-section');
+                hideProjectInfo();
+                
+                switch(section) {
+                    case 'intro':
+                        cameraTargetPosition = new THREE.Vector3(6, 3, 6);
+                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        break;
+                    case 'about':
+                        cameraTargetPosition = new THREE.Vector3(-6, 2, -6);
+                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        break;
+                    case 'projects':
+                        cameraTargetPosition = new THREE.Vector3(0, 8, 0);
+                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        break;
+                    case 'contact':
+                        cameraTargetPosition = new THREE.Vector3(0, 2, 6);
+                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        break;
+                }
+            });
+        });
+
+        // Animation loop
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Animate cubes
+            cubes.forEach((cube, index) => {
+                cube.position.y = Math.sin(elapsedTime + index) * 0.1 + cube.position.y;
+            });
+            
+            // Animate floating spheres
+            scene.children.forEach(child => {
+                if (child.geometry instanceof THREE.SphereGeometry) {
+                    child.position.y = Math.sin(elapsedTime * 2 + child.position.x) * 0.2 + 1;
+                    child.rotation.x = elapsedTime * 0.5;
+                    child.rotation.z = elapsedTime * 0.5;
+                }
+            });
+            
+            // Animate the point light
+            pointLight.position.x = Math.sin(elapsedTime * 0.5) * 5;
+            pointLight.position.z = Math.cos(elapsedTime * 0.5) * 5;
+            
+            // Smooth camera movement
+            camera.position.lerp(cameraTargetPosition, cameraSmoothing);
+            
+            const currentLookAt = new THREE.Vector3();
+            camera.getWorldDirection(currentLookAt);
+            const targetWorldDir = cameraTargetLookAt.clone().sub(camera.position).normalize();
+            
+            const newLookAt = new THREE.Vector3();
+            newLookAt.x = THREE.MathUtils.lerp(currentLookAt.x, targetWorldDir.x, cameraSmoothing);
+            newLookAt.y = THREE.MathUtils.lerp(currentLookAt.y, targetWorldDir.y, cameraSmoothing);
+            newLookAt.z = THREE.MathUtils.lerp(currentLookAt.z, targetWorldDir.z, cameraSmoothing);
+            newLookAt.normalize();
+            
+            camera.lookAt(camera.position.clone().add(newLookAt));
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('click', onClick);
+
+        // Loading screen
+        const loadingScreen = document.querySelector('.loading');
+        const progressBar = document.getElementById('progress');
+        let progress = 0;
+        
+        const loadingInterval = setInterval(() => {
+            progress += 5;
+            progressBar.style.width = `${progress}%`;
+            
+            if (progress >= 100) {
+                clearInterval(loadingInterval);
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    animate();
+                }, 500);
+            }
+        }, 100);
+    </script>
+</body>
+</html>

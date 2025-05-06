@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tim Park</title>
+    <title>Timothy Park - 3D Portfolio</title>
     <style>
         * {
             margin: 0;
@@ -64,46 +64,6 @@
             background-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-3px);
         }
-        .project-info {
-            position: absolute;
-            top: 40px;
-            right: 40px;
-            width: 300px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.5s ease;
-            pointer-events: auto;
-        }
-        .project-info.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .project-title {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
-        .project-desc {
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-bottom: 15px;
-        }
-        .project-link {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: #4a5af8;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-        .project-link:hover {
-            background-color: #3a48d8;
-            transform: scale(1.05);
-        }
         .controls-hint {
             position: absolute;
             bottom: 100px;
@@ -145,11 +105,216 @@
             background-color: #4a5af8;
             transition: width 0.3s ease;
         }
+        .project-info {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            padding: 60px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+            overflow-y: auto;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .project-info.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .project-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .project-media {
+            width: 100%;
+            max-width: 900px;
+            margin: 30px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .project-media img, .project-media video {
+            width: 100%;
+            display: block;
+        }
+        .project-content {
+            margin-top: 30px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .project-tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tech-tag {
+            background-color: rgba(74, 90, 248, 0.2);
+            border: 1px solid #4a5af8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .project-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .project-link {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #4a5af8;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .project-link:hover {
+            background-color: #3a48d8;
+            transform: scale(1.05);
+        }
+        .project-details {
+            margin: 25px 0;
+            line-height: 1.6;
+        }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .section-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s ease;
+            z-index: 20;
+        }
+        .section-content.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .section-content h2 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        .section-content p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .tech-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .skill-tag {
+            background-color: #4a5af8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group textarea {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .submit-btn {
+            background-color: #4a5af8;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #3a48d8;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .close-btn:hover {
+            opacity: 1;
+        }
     </style>
+    
+    <!----> Adding Three.js libraries via Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js",
+        "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js"
+      }
+    }
+    </script>
 </head>
 <body>
     <div class="loading">
         <h2>Loading Tim...</h2>
+        <p>Turn on browser graphics acceleration for a smooth experience...</p>
         <div class="progress-bar">
             <div class="progress" id="progress"></div>
         </div>
@@ -165,269 +330,330 @@
             <div class="nav-item" data-section="intro">Home</div>
             <div class="nav-item" data-section="about">About</div>
             <div class="nav-item" data-section="projects">Projects</div>
-            <div class="nav-item" data-section="contact">Contact</div>
+            <div class="nav-item" data-section="contact">Contact Me</div>
         </div>
 
         <div class="controls-hint">
-            Use WASD or arrow keys to move around. Click on objects to explore.
+            Click on the cats to explore my projects.
         </div>
-
 
         <div class="project-info" id="project-info">
-            <h3 class="project-title">Exercise Counter</h3>
-            <p class="project-desc">Description TBD...</p>
-            <a href="#" class="project-link" target="_blank">View Project</a>
+            <div class="project-container">
+                <button class="back-btn">&larr; Back to Home View</button>
+                <h1 class="project-title">Project Title</h1>
+                <div class="project-media" id="project-media">
+                    <!-- Media content will be inserted here -->
+                </div>
+                <div class="project-content">
+                    <div class="project-tech-tags" id="project-tech-tags">
+                        <!-- Tech stack tags will be inserted here -->
+                    </div>
+                    <p class="project-desc">Project description goes here. This is a brief overview of what the project is about and what technologies were used.</p>
+                    <div class="project-details" id="project-details">
+                        <!-- Additional project details will be inserted here -->
+                    </div>
+                    <div class="project-links">
+                        <a href="#" class="project-link" target="_blank">View Live Project</a>
+                        <a href="#" class="project-link project-github-link">View Code</a>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // Initialize Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0x050505);
-        document.body.appendChild(renderer.domElement);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
-
-        const pointLight = new THREE.PointLight(0x4a5af8, 2, 20);
-        pointLight.position.set(0, 2, 0);
-        scene.add(pointLight);
-
-        // Create environment and objects
-        const floorGeometry = new THREE.PlaneGeometry(50, 50, 20, 20);
-        const floorMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x111111,
-            wireframe: true
-        });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -1;
-        scene.add(floor);
-
-        // Create a grid of cubes
-        const cubes = [];
-        for(let i = -5; i <= 5; i += 2) {
-            for(let j = -5; j <= 5; j += 2) {
-                if(Math.random() > 0.7) continue; // Skip some positions randomly
-                
-                const height = Math.random() * 2 + 0.5;
-                const geometry = new THREE.BoxGeometry(1, height, 1);
-                const color = new THREE.Color(0x4a5af8);
-                
-                const material = new THREE.MeshStandardMaterial({ color });
-                const cube = new THREE.Mesh(geometry, material);
-                
-                cube.position.set(i, height/2 - 1, j);
-                cube.userData = {
-                    isInteractive: true,
-                    projectId: Math.floor(Math.random() * projects.length)
-                };
-                
-                scene.add(cube);
-                cubes.push(cube);
-            }
-        }
-
-        // Add some spheres as accent objects
-        for(let i = 0; i < 15; i++) {
-            const radius = Math.random() * 0.3 + 0.1;
-            const geometry = new THREE.SphereGeometry(radius, 16, 16);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0xff5252,
-                emissive: 0xff5252,
-                emissiveIntensity: 0.5
-            });
-            const sphere = new THREE.Mesh(geometry, material);
+        <div class="section-content" id="about-section">
+            <button class="close-btn">&times;</button>
+            <h2>About Me</h2>
+            <p>Hi, I'm Timothy Park. I'm a Developer and Project Manager with expertise in creating unique, innovative digital solutions.</p>
+            <p>With a background in developing applications and managing technical projects, I bring a unique perspective to every project I work on. My approach combines technical expertise with a strong focus on user experience and business objectives.</p>
             
-            sphere.position.set(
-                (Math.random() - 0.5) * 20,
-                Math.random() * 2,
-                (Math.random() - 0.5) * 20
-            );
+            <h3>Skills & Technologies</h3>
+            <div class="tech-skills">
+                <div class="skill-tag">JavaScript</div>
+                <div class="skill-tag">React</div>
+                <div class="skill-tag">Three.js</div>
+                <div class="skill-tag">HTML/CSS</div>
+                <div class="skill-tag">Project Management</div>
+                <div class="skill-tag">UI/UX Design</div>
+                <div class="skill-tag">Node.js</div>
+                <div class="skill-tag">Git</div>
+                <div class="skill-tag">Python</div>
+                <div class="skill-tag">AI</div>
+                <div class="skill-tag">Vite</div>
+                <div class="skill-tag">Flask</div>
+                <div class="skill-tag">Firebase</div>
+            </div>
             
-            scene.add(sphere);
-        }
+            <h3>Experience</h3>
+            <p>I have experience in Generative AI; My focus has been on ensuring successful project outcomes through effective management and technical expertise.</p>
+        </div>
 
-        // Camera and controls setup
-        camera.position.set(6, 3, 6);
-        camera.lookAt(0, 0, 0);
-
-        let cameraTargetPosition = new THREE.Vector3(6, 3, 6);
-        let cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
-        const cameraSmoothing = 0.05;
-
-        // projects to be filled in later...
-        const projects = [
-            {
-                title: "E-Commerce Platform",
-                description: "A full-featured online store with shopping cart, payment processing, and inventory management.",
-                link: "#"
-            },
-            {
-                title: "Mobile Banking App",
-                description: "Secure and intuitive banking application with transaction history, transfers, and bill payments.",
-                link: "#"
-            },
-            {
-                title: "Portfolio Website",
-                description: "Custom designed portfolio showcasing creative work with interactive elements and smooth animations.",
-                link: "#"
-            },
-            {
-                title: "Social Media Dashboard",
-                description: "Analytics tool for tracking engagement across multiple social platforms with data visualization.",
-                link: "#"
-            },
-            {
-                title: "Weather Application",
-                description: "Location-based weather forecasting with beautiful UI and animated weather conditions.",
-                link: "#"
-            }
-        ];
-
-        // Project info panel
-        const projectInfo = document.getElementById('project-info');
+        <div class="section-content" id="contact-section">
+            <button class="close-btn">&times;</button>
+            <h2>Get In Touch</h2>
+            <p>Have a project in mind or just want to connect? Feel free to reach out to me using the form below.</p>
+            
+            <div class="contact-form">
+                <form id="contactForm" action="https://formspree.io/f/xnnddwnj" method="POST">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" placeholder="Write your message here..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Send Message</button>
+                </form>
+            </div>
+        </div>
         
-        function showProjectInfo(project) {
+
+    <script type="module" src="main.js"></script>
+
+    <!-- Portfolio interaction script -->
+    <script>
+const projects = [
+    {
+        title: "Generative AI Summarizer",
+        description: "A full-stack web application that transcribes and summarizes lecture videos using OpenAI's Whisper and GPT-4 models, built with React, Flask, and Tailwind CSS.",
+        media: {
+            type: "video",
+            url: "/assets/videos/lecturesum.mp4"  
+        },
+        techStack: ["React", "Vite", "Tailwind CSS", "Flask", "OpenAI GPT-4", "Whisper API", "jsPDF"],
+        link: "#",
+        githubLink: "#", 
+        details: "This application allows users to upload lecture videos for automatic transcription and summarization. The Flask backend handles audio extraction, compression, and processing through OpenAI's latest SDKs. The simple responsive frontend features light/dark mode toggle, real-time progress tracking, intuitive file upload interface, and smooth transitions for optimal user experience."
+    },
+    {
+        title: "Bicep Curl Counter",
+        description: "A web application that uses computer vision and TensorFlow.js to count bicep curl repetitions in real-time through your webcam, providing instant feedback on form.",
+        media: {
+            type: "video",
+            url: "/assets/videos/bicep curl.mp4" 
+        },
+        techStack: ["HTML/CSS", "JavaScript", "TensorFlow.js", "MoveNet", "Pose Detection API"],
+        link: "#",
+        githubLink: "#", 
+        details: "This browser-based application leverages the TensorFlow.js MoveNet model to detect and track body poses through a webcam. It precisely monitors arm angles during bicep curls, counting repetitions for both left and right arms independently. The app features real-time skeleton visualization with color-coded feedback, performance optimizations for smooth frame rates, and a straightforward user interface."
+    },
+    {
+        title: "3D Portfolio Website",
+        description: "An interactive 3D portfolio website showcasing creative work with Three.js animations and smooth user interface.",
+        media: {
+            type: "image",
+            url: "/api/placeholder/600/400"  
+        },
+        techStack: ["Three.js", "JavaScript", "HTML/CSS"],
+        link: "#",
+        githubLink: "#",
+        details: "This portfolio website uses 3D graphics to create an immersive user experience. The interactive elements include a custom navigation system, animated project showcases, and responsive design that works across devices. Performance optimization ensures fast loading even with complex 3D elements."
+    },
+    {
+        title: "Social Media Dashboard",
+        description: "A comprehensive analytics dashboard that tracks engagement metrics across multiple social media platforms in a unified interface.",
+        media: {
+            type: "image",
+            url: "/api/placeholder/600/400" 
+        },
+        techStack: ["Vue.js", "D3.js", "Python", "Social Media APIs"],
+        link: "#",
+        githubLink: "#", 
+        details: "The social media dashboard integrates with Facebook, Instagram, Twitter, and LinkedIn APIs to pull performance data into a single interface. Features include customizable widgets, automated reporting, competitor analysis, and content scheduling tools. Data visualization components make complex metrics easy to understand."
+    }
+];
+
+        // Project info panel elements
+        const projectInfo = document.getElementById('project-info');
+        const projectMedia = document.getElementById('project-media');
+        const aboutSection = document.getElementById('about-section');
+        const contactSection = document.getElementById('contact-section');
+        
+        // Set up pointer to use for raycasting (will be updated by main.js)
+        let sceneClickHandler = null;
+        
+        function showProjectInfo(projectId) {
+            const project = projects[projectId];
+            
+            // Set basic info
             projectInfo.querySelector('.project-title').textContent = project.title;
             projectInfo.querySelector('.project-desc').textContent = project.description;
-            projectInfo.querySelector('.project-link').href = project.link;
+            
+            // Update links
+            const projectLinks = projectInfo.querySelectorAll('.project-link');
+            projectLinks[0].href = project.link;
+            if (project.githubLink) {
+                projectLinks[1].href = project.githubLink;
+                projectLinks[1].style.display = 'inline-block';
+            } else {
+                projectLinks[1].style.display = 'none';
+            }
+            
+            // Add media (image or video)
+            projectMedia.innerHTML = '';
+            if (project.media) {
+                if (project.media.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = project.media.url;
+                    img.alt = project.title;
+                    projectMedia.appendChild(img);
+                } else if (project.media.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = project.media.url;
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.muted = true;
+                    projectMedia.appendChild(video);
+                }
+            }
+            
+            // Add tech stack tags
+            const techTagsContainer = projectInfo.querySelector('#project-tech-tags');
+            techTagsContainer.innerHTML = '';
+            if (project.techStack && project.techStack.length > 0) {
+                project.techStack.forEach(tech => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tech-tag';
+                    tag.textContent = tech;
+                    techTagsContainer.appendChild(tag);
+                });
+            }
+            
+            // Add detailed description
+            const detailsContainer = projectInfo.querySelector('#project-details');
+            detailsContainer.innerHTML = '';
+            if (project.details) {
+                const details = document.createElement('p');
+                details.textContent = project.details;
+                detailsContainer.appendChild(details);
+            }
+            
+            // Show the project info panel
             projectInfo.classList.add('active');
+            
+            // Hide navigation during full screen view
+            document.querySelector('.nav').style.display = 'none';
         }
         
         function hideProjectInfo() {
-            projectInfo.classList.remove('active');
-        }
+    projectInfo.classList.remove('active');
+    // Show navigation when returning to 3D view
+    document.querySelector('.nav').style.display = 'flex';
+    // Reset camera to default home view
+    if (window.resetCamera) {
+        window.resetCamera();
+    }
+}
 
-        // Raycaster for object interaction
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+// Add event listener for back button
+document.querySelector('.back-btn').addEventListener('click', hideProjectInfo);
         
-        function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-        }
-        
-        function onClick(event) {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children);
-            
-            for (let i = 0; i < intersects.length; i++) {
-                const object = intersects[i].object;
-                if (object.userData && object.userData.isInteractive) {
-                    const projectId = object.userData.projectId;
-                    showProjectInfo(projects[projectId]);
-                    
-                    // Animate camera to focus on this object
-                    const objectPos = object.position.clone();
-                    const cameraOffset = new THREE.Vector3(2, 1.5, 2);
-                    cameraTargetPosition = objectPos.clone().add(cameraOffset);
-                    cameraTargetLookAt = objectPos;
-                    
-                    // Highlight the clicked object
-                    object.material.emissive = new THREE.Color(0x4a5af8);
-                    object.material.emissiveIntensity = 0.5;
-                    
-                    setTimeout(() => {
-                        object.material.emissiveIntensity = 0;
-                    }, 1000);
-                    
-                    break;
-                }
-            }
-        }
+        // Close buttons for other panels
+        document.querySelectorAll('.close-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.parentElement.classList.remove('active');
+            });
+        });
 
         // Navigation between sections
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const section = e.target.getAttribute('data-section');
                 hideProjectInfo();
+                aboutSection.classList.remove('active');
+                contactSection.classList.remove('active');
                 
                 switch(section) {
                     case 'intro':
-                        cameraTargetPosition = new THREE.Vector3(6, 3, 6);
-                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        // Reset camera in main.js
+                        if (window.resetCamera) window.resetCamera();
                         break;
                     case 'about':
-                        cameraTargetPosition = new THREE.Vector3(-6, 2, -6);
-                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        aboutSection.classList.add('active');
                         break;
                     case 'projects':
-                        cameraTargetPosition = new THREE.Vector3(0, 8, 0);
-                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        // Move camera to view all projects in main.js
+                        if (window.viewAllProjects) window.viewAllProjects();
                         break;
                     case 'contact':
-                        cameraTargetPosition = new THREE.Vector3(0, 2, 6);
-                        cameraTargetLookAt = new THREE.Vector3(0, 0, 0);
+                        contactSection.classList.add('active');
                         break;
                 }
             });
         });
 
-        // Animation loop
-        const clock = new THREE.Clock();
+        // Contact form handling (you would add actual submission logic)
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        function animate() {
-            const elapsedTime = clock.getElapsedTime();
+        const form = this;
+        const submitBtn = form.querySelector('.submit-btn');
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const message = document.getElementById('message').value;
+        
+        if (name && email && message) {
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
             
-            // Animate cubes
-            cubes.forEach((cube, index) => {
-                cube.position.y = Math.sin(elapsedTime + index) * 0.1 + cube.position.y;
-            });
-            
-            // Animate floating spheres
-            scene.children.forEach(child => {
-                if (child.geometry instanceof THREE.SphereGeometry) {
-                    child.position.y = Math.sin(elapsedTime * 2 + child.position.x) * 0.2 + 1;
-                    child.rotation.x = elapsedTime * 0.5;
-                    child.rotation.z = elapsedTime * 0.5;
+            // Use Fetch API to submit the form
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'Accept': 'application/json'
                 }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Show success message
+                    alert('Thank you for your message! I\'ll get back to you soon.');
+                    
+                    // Clear form
+                    form.reset();
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message';
+                    
+                    // Hide contact section
+                    document.getElementById('contact-section').classList.remove('active');
+                } else {
+                    response.json().then(data => {
+                        let errorMessage = 'Sorry, there was a problem submitting your form';
+                        
+                        if (data.errors) {
+                            errorMessage = data.errors.map(error => error.message).join(', ');
+                        }
+                        
+                        alert(errorMessage);
+                        
+                        // Reset button
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Send Message';
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Sorry, there was an error sending your message. Please try again later.');
+                
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
             });
-            
-            // Animate the point light
-            pointLight.position.x = Math.sin(elapsedTime * 0.5) * 5;
-            pointLight.position.z = Math.cos(elapsedTime * 0.5) * 5;
-            
-            // Smooth camera movement
-            camera.position.lerp(cameraTargetPosition, cameraSmoothing);
-            
-            const currentLookAt = new THREE.Vector3();
-            camera.getWorldDirection(currentLookAt);
-            const targetWorldDir = cameraTargetLookAt.clone().sub(camera.position).normalize();
-            
-            const newLookAt = new THREE.Vector3();
-            newLookAt.x = THREE.MathUtils.lerp(currentLookAt.x, targetWorldDir.x, cameraSmoothing);
-            newLookAt.y = THREE.MathUtils.lerp(currentLookAt.y, targetWorldDir.y, cameraSmoothing);
-            newLookAt.z = THREE.MathUtils.lerp(currentLookAt.z, targetWorldDir.z, cameraSmoothing);
-            newLookAt.normalize();
-            
-            camera.lookAt(camera.position.clone().add(newLookAt));
-            
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
+        } else {
+            alert('Please fill out all fields.');
         }
+    });
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
 
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('click', onClick);
-
-        // Loading screen
+        // Loading screen handling
         const loadingScreen = document.querySelector('.loading');
         const progressBar = document.getElementById('progress');
         let progress = 0;
@@ -440,10 +666,17 @@
                 clearInterval(loadingInterval);
                 setTimeout(() => {
                     loadingScreen.classList.add('hidden');
-                    animate();
                 }, 500);
             }
         }, 100);
+
+        // Expose functions to be called from main.js
+        window.showProject = showProjectInfo;
+        
+        // Register a click handler function from main.js
+        window.registerClickHandler = function(handler) {
+            sceneClickHandler = handler;
+        };
     </script>
 </body>
 </html>

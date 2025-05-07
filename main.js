@@ -222,7 +222,7 @@ function createGrassGround() {
         diffuse: 'textures/grass/grass_diffuse.jpg',
         normal: 'textures/grass/grass_normal.jpg',
         roughness: 'textures/grass/grass_roughness.jpg',
-        displacement: 'textures/grass/grass_displacement.jpg'
+        displacement: 'textures/grass/grass_displacementt.jpg'
     };
     
     // Create a placeholder textured ground initially

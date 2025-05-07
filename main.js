@@ -109,7 +109,9 @@ function createSky() {
     scene.add(hemiLight);
     
     console.log("Sky created with very soft lighting");
-    
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Soft white light
+    scene.add(ambientLight);
     // Add clouds
     addClouds();
     

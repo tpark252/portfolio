@@ -112,6 +112,8 @@ function createSky() {
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Soft white light
     scene.add(ambientLight);
+    
+
     // Add clouds
     addClouds();
     
@@ -365,164 +367,100 @@ function addEnvironmentalElements() {
     console.log("Added environmental elements");
 }
 
-// Create lightbulbs above each project
-function createLightbulbs() {
-    // First, check if lightbulbs already exist and remove them
+function createSimpleLightbulbs() {
+    // Remove any existing lightbulbs first
     scene.children.forEach(child => {
-        if (child.name === 'lightbulb') {
-            scene.remove(child);
+      if (child.name === 'lightbulb') {
+        scene.remove(child);
+      }
+    });
+    
+    // Create a lightbulb for each project
+    projectPositions.forEach(position => {
+      // Create lightbulb group
+      const lightbulb = new THREE.Group();
+      lightbulb.name = 'lightbulb';
+      
+      // Create bulb geometry (sphere)
+      const bulbGeometry = new THREE.SphereGeometry(0.13, 16, 16);
+      const bulbMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffcc,
+        emissive: 0xffffcc,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.9
+      });
+      
+      const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
+      
+      // Create base (small cylinder)
+      const baseGeometry = new THREE.CylinderGeometry(0.05, 0.11, 0.11, 20);
+      const baseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x555555,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      
+      const base = new THREE.Mesh(baseGeometry, baseMaterial);
+      base.position.y = -0.15;
+      
+      // Add light source
+      const light = new THREE.PointLight(0xffffcc, 1, 4);
+      light.position.y = 0;
+      
+      // Add all parts to the lightbulb group
+      lightbulb.add(bulb, base, light);
+      
+      // Position directly above the project at a fixed height
+      lightbulb.position.set(position.x, 2.5, position.z);
+      lightbulb.userData = {
+        active: false
+      };
+      
+      // Add to scene (initially hidden)
+      lightbulb.visible = false;
+      scene.add(lightbulb);
+    });
+  }
+  
+  function showLightbulbs() {
+    console.log("Showing lightbulbs");
+    
+    scene.children.forEach(child => {
+      if (child.name === 'lightbulb') {
+        // Make visible and set position
+        child.visible = true;
+        child.position.y = 1; // Fixed position above the cats
+        child.userData.active = true;
+        
+        // Reset light intensity
+        const light = child.children.find(obj => obj instanceof THREE.PointLight);
+        if (light) {
+          light.intensity = 1;
         }
+        
+        // Reset bulb material
+        const bulb = child.children.find(obj => obj.isMesh && obj.geometry instanceof THREE.SphereGeometry);
+        if (bulb && bulb.material) {
+          bulb.material.emissiveIntensity = 0.8;
+          bulb.material.opacity = 0.9;
+        }
+      }
     });
     
-    // Lightbulb materials
-    const bulbGlassMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffe0,        // Slight yellow tint
-        emissive: 0xffffe0,     // Self-illumination
-        emissiveIntensity: 0.4, // Moderate glow
-        transparent: true,      // Enable transparency
-        opacity: 0.9,           // Slightly transparent
-        roughness: 0.1,         // Glossy surface
-        metalness: 0.1          // Slightly metallic
-    });
     
-    const bulbBaseMaterial = new THREE.MeshStandardMaterial({
-        color: 0x777777,   // Metal gray
-        roughness: 0.5,
-        metalness: 0.8
+   // Set timer to fade out lightbulbs after 5 seconds
+   setTimeout(() => {
+    console.log("Timer triggered - starting lightbulb fadeout");
+    scene.children.forEach(child => {
+      if (child.name === 'lightbulb') {
+        child.visible = false;
+      }
     });
-    
-    // Create lightbulb for each project position
-    projectPositions.forEach((position, index) => {
-        // Create lightbulb group
-        const lightbulbGroup = new THREE.Group();
-        lightbulbGroup.name = 'lightbulb';
-        
-        // Bulb glass (the actual light part)
-        const bulbGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-        const bulbGlass = new THREE.Mesh(bulbGeometry, bulbGlassMaterial);
-        
-        // Bulb base (metal part)
-        const baseGeometry = new THREE.CylinderGeometry(0.05, 0.1, 0.15, 16);
-        const bulbBase = new THREE.Mesh(baseGeometry, bulbBaseMaterial);
-        bulbBase.position.y = -0.2;
-        
-        // Add elements to the lightbulb group
-        lightbulbGroup.add(bulbGlass, bulbBase);
-        
-        // Position lightbulb above the project
-        lightbulbGroup.position.set(
-            position.x,
-            3, // Position high above the project
-            position.z
-        );
-        
-        // Add small point light inside the bulb
-        const bulbLight = new THREE.PointLight(0xffffcc, 1, 3);
-        bulbLight.position.set(0, 0, 0);
-        lightbulbGroup.add(bulbLight);
-        
-        // Store the bulb's target Y position for animation
-        lightbulbGroup.userData = {
-            targetY: 3,
-            originalY: 3,
-            lightIntensity: 1
-        };
-        
-        // Add lightbulb to scene
-        scene.add(lightbulbGroup);
-        lightbulbGroup.visible = false; // Initially hidden
-    });
-    
-    console.log("Created lightbulbs above projects");
+  }, 5000);
 }
 
-// Show lightbulbs with animation
-function showLightbulbs() {
-    scene.children.forEach(child => {
-        if (child.name === 'lightbulb') {
-            // Make the lightbulb visible
-            child.visible = true;
-            
-            // Start from above the scene and drop down
-            child.position.y = 10;
-            
-            // Store target position at lightbulb's userData
-            child.userData.targetY = 3;
-            
-            // Get the point light inside the lightbulb group
-            const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
-            if (bulbLight) {
-                bulbLight.intensity = 0; // Start with no light
-                child.userData.lightIntensity = 1; // Target full intensity
-            }
-        }
-    });
-}
-
-// Hide lightbulbs with animation
-function hideLightbulbs() {
-    scene.children.forEach(child => {
-        if (child.name === 'lightbulb') {
-            // Store target position high above to fly up
-            child.userData.targetY = 10;
-            
-            // Get the point light inside the lightbulb group
-            const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
-            if (bulbLight) {
-                // Target zero intensity for fadeout
-                bulbLight.intensity = child.userData.lightIntensity; // Current intensity
-                child.userData.lightIntensity = 0; // Target intensity
-            }
-        }
-    });
-}
-
-// Animate lightbulbs in the main animation loop
-function animateLightbulbs(deltaTime) {
-    let allHidden = true;
-    
-    scene.children.forEach(child => {
-        if (child.name === 'lightbulb') {
-            // Check if lightbulb is visible
-            if (child.visible) {
-                allHidden = false;
-                
-                // Animate Y position
-                const targetY = child.userData.targetY;
-                const currentY = child.position.y;
-                
-                if (Math.abs(targetY - currentY) > 0.01) {
-                    // Move towards target position
-                    child.position.y += (targetY - currentY) * deltaTime * 3;
-                    
-                    // Get the point light inside the lightbulb group
-                    const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
-                    if (bulbLight) {
-                        // Animate light intensity
-                        const targetIntensity = child.userData.lightIntensity;
-                        bulbLight.intensity += (targetIntensity - bulbLight.intensity) * deltaTime * 5;
-                    }
-                } else {
-                    // If moving up to hide and reached target, completely hide the lightbulb
-                    if (targetY > 5 && Math.abs(targetY - currentY) < 0.2) {
-                        child.visible = false;
-                    }
-                }
-                
-                // Make the lightbulbs sway slightly
-                const time = performance.now() * 0.001; // Current time in seconds
-                const swayFactor = Math.sin(time + child.position.x + child.position.z) * 0.03;
-                child.rotation.z = swayFactor;
-                
-                // Add a slight hover motion
-                const hoverOffset = Math.sin(time * 1.5 + child.position.x) * 0.05;
-                child.position.y += hoverOffset * deltaTime;
-            }
-        }
-    });
-    
-    return !allHidden; // Return true if any lightbulbs are still visible
-}
+  
 
 // STEP 4: CREATE COMPLETE ENVIRONMENT
 function createEnvironment() {
@@ -535,8 +473,6 @@ function createEnvironment() {
     // Add environmental elements
     addEnvironmentalElements();
     
-    // Create lightbulbs (initially hidden)
-    createLightbulbs();
     
     console.log("Environment created successfully");
 }
@@ -704,10 +640,13 @@ function createFallbackModel(position) {
     scene.add(modelGroup);
     models.push(modelGroup);
     console.log(`Created fallback model for project ${position.id}`);
+    
 }
 
 // Start loading models
 loadProjectModels();
+
+createSimpleLightbulbs();
 
 // Setup raycaster for model interaction
 const raycaster = new THREE.Raycaster();
@@ -836,15 +775,20 @@ function moveCamera(x, y, z, lookX, lookY, lookZ) {
 function resetCamera() {
     console.log("Resetting camera to default position");
     moveCamera(3, 2, 5, 0, 0, 0);
-    hideLightbulbs(); // Hide lightbulbs when returning to home view
+
 }
 
 // Show all projects (top-down view)
+// Modify your viewAllProjects function in main.js
 function viewAllProjects() {
-    moveCamera(0, 6, 0, 0, 0, 0);
-    showLightbulbs(); // Show lightbulbs when viewing projects
-    console.log("Camera moved to show all projects view with lightbulbs");
-}
+    // Move camera to home position instead
+    moveCamera(3, 2, 5, 0, 0, 0);
+    
+    // Show lightbulbs
+    showLightbulbs();
+    
+    console.log("Moved to home view with lightbulbs");
+  }
 
 // Expose functions to be called from HTML
 window.resetCamera = resetCamera;
@@ -895,9 +839,8 @@ function animate() {
     
     // Animate clouds
     animateClouds(deltaTime);
-    
-    // Animate lightbulbs
-    animateLightbulbs(deltaTime);
+
+
     
     // Camera smooth transitions (only when animating)
     if (cameraAnimating) {

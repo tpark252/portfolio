@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js'; 
 
 // Debug logging
 console.log("Starting 3D portfolio initialization");
@@ -15,6 +16,10 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x111111);
 document.body.appendChild(renderer.domElement);
 
+// Enable shadows for more realistic rendering
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
 console.log("Renderer created and added to DOM");
 
 // Enhanced orbit controls with better configuration
@@ -28,44 +33,519 @@ controls.maxDistance = 15; // Prevent zooming out too far
 controls.maxPolarAngle = Math.PI / 1.5; // Prevent going below the floor too much
 controls.target.set(0, 0, 0); // Initial look target
 
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-dirLight.position.set(5, 5, 5);
-scene.add(dirLight);
-
-// Add a point light that moves
-const pointLight = new THREE.PointLight(0x4a5af8, 1, 15);
-pointLight.position.set(0, 2, 0);
-scene.add(pointLight);
-
-const ambientLight = scene.children.find(child => child instanceof THREE.AmbientLight);
-if (ambientLight) {
-    ambientLight.intensity = 0.6; // Reduce ambient light slightly
-}
-
-const floorGeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
-const floorMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0x303030,
-    roughness: 0.75,  
-    metalness: 0.2,  
-    envMapIntensity: 1.5, 
-});
-
-
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = -Math.PI / 2;
-floor.position.y = -1;
-scene.add(floor);
-
-
-// Update project positions and reduce to 4 projects
 const projectPositions = [
     { x: -2, y: -1, z: -2, rotation: Math.PI * 0.25, id: 0, model: 'cat' },
     { x: 2, y: -1, z: -2, rotation: Math.PI * 0.75, id: 1, model: 'cats' },
     { x: -2, y: -1, z: 2, rotation: Math.PI * 1.25, id: 2, model: 'maxwell' },
     { x: 2, y: -1, z: 2, rotation: Math.PI * 1.75, id: 3, model: 'oiia' }
 ];
+
+function createSky() {
+    // Create an instance of Sky
+    const sky = new Sky();
+    sky.scale.setScalar(450000);
+    scene.add(sky);
+    
+    // Much softer sun position parameters
+    const sun = new THREE.Vector3();
+    const effectController = {
+        turbidity: 6,         // Increased haziness significantly (2 -> 6)
+        rayleigh: 1,          // Increased scattering significantly (0.2 -> 1)
+        mieCoefficient: 0.02, // Increased sun haziness (0.005 -> 0.02)
+        mieDirectionalG: 0.4, // Decreased sun sharpness even more (0.7 -> 0.4)
+        elevation: 10,        // Higher sun position (8 -> 25)
+        azimuth: 50,         // Adjusted angle (180 -> 230)
+    };
+    
+    const uniforms = sky.material.uniforms;
+    uniforms['turbidity'].value = effectController.turbidity;
+    uniforms['rayleigh'].value = effectController.rayleigh;
+    uniforms['mieCoefficient'].value = effectController.mieCoefficient;
+    uniforms['mieDirectionalG'].value = effectController.mieDirectionalG;
+    
+    // Calculate sun position
+    const phi = THREE.MathUtils.degToRad(90 - effectController.elevation);
+    const theta = THREE.MathUtils.degToRad(effectController.azimuth);
+    sun.setFromSphericalCoords(1, phi, theta);
+    
+    uniforms['sunPosition'].value.copy(sun);
+    
+    // Remove previous directional lights
+    scene.children.forEach(child => {
+        if (child instanceof THREE.DirectionalLight) {
+            scene.remove(child);
+        }
+    });
+    
+    // Create a much softer directional light with a more muted color
+    const dirLight = new THREE.DirectionalLight(0xe0c8a0, 0.5); // Even warmer color and lower intensity
+    dirLight.position.copy(sun).multiplyScalar(10);
+    dirLight.castShadow = true;
+    
+    // Improve shadow quality
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.camera.left = -20;
+    dirLight.shadow.camera.right = 20;
+    dirLight.shadow.camera.top = 20;
+    dirLight.shadow.camera.bottom = -20;
+    
+    // Add a subtle shadow blur
+    dirLight.shadow.radius = 3;
+    
+    scene.add(dirLight);
+    
+    // Remove previous hemisphere lights
+    scene.children.forEach(child => {
+        if (child instanceof THREE.HemisphereLight) {
+            scene.remove(child);
+        }
+    });
+    
+    // Add very soft hemisphere light for ambient lighting
+    const hemiLight = new THREE.HemisphereLight(0xb8c8dd, 0x553322, 0.3); // Muted sky color, ground color, reduced intensity
+    scene.add(hemiLight);
+    
+    console.log("Sky created with very soft lighting");
+    
+    // Add clouds
+    addClouds();
+    
+    return { sky, dirLight, hemiLight };
+}
+
+// Function to create clouds in the sky
+function addClouds() {
+    // First remove any existing clouds
+    scene.children.forEach(child => {
+        if (child.name === 'cloud') {
+            scene.remove(child);
+        }
+    });
+    
+    // Create cloud geometry and material
+    const cloudMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.5,
+        roughness: 1,
+        metalness: 0
+    });
+    
+    // Create several clouds at different positions
+    for (let i = 0; i < 12; i++) {
+        // Create a cloud group
+        const cloudGroup = new THREE.Group();
+        cloudGroup.name = 'cloud';
+        
+        // Random position around the scene
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 15 + Math.random() * 35; // Clouds at various distances
+        const height = 10 + Math.random() * 8;  // Clouds at different heights
+        
+        cloudGroup.position.set(
+            Math.cos(angle) * radius,
+            height,
+            Math.sin(angle) * radius
+        );
+        
+        // Random rotation
+        cloudGroup.rotation.y = Math.random() * Math.PI;
+        
+        // Create a random number of cloud puffs for each cloud
+        const numPuffs = 3 + Math.floor(Math.random() * 5);
+        
+        for (let j = 0; j < numPuffs; j++) {
+            // Create a fluffy cloud puff (flattened sphere)
+            const puffSize = 2 + Math.random() * 3;
+            const puffGeometry = new THREE.SphereGeometry(puffSize, 10, 8);
+            const puff = new THREE.Mesh(puffGeometry, cloudMaterial);
+            
+            // Position puffs to form a cloud shape
+            puff.position.set(
+                (Math.random() - 0.5) * 4,
+                (Math.random() - 0.5) * 1.8,
+                (Math.random() - 0.5) * 4
+            );
+            
+            // Flatten the puff a bit
+            puff.scale.y = 0.7;
+            
+            // Add puff to cloud group
+            cloudGroup.add(puff);
+        }
+        
+        // Add the cloud to the scene
+        scene.add(cloudGroup);
+    }
+    
+    console.log("Added clouds to the scene");
+}
+
+// Function to animate clouds
+function animateClouds(deltaTime) {
+    scene.children.forEach(child => {
+        if (child.name === 'cloud') {
+            // Move clouds slowly
+            child.position.x += deltaTime * 0.2 * (0.5 - Math.random()); // Random drift
+            child.position.z += deltaTime * 0.3 * (0.5 - Math.random()); // Random drift
+            
+            // Keep clouds within a certain range
+            if (child.position.x > 50) child.position.x = -50;
+            if (child.position.x < -50) child.position.x = 50;
+            if (child.position.z > 50) child.position.z = -50;
+            if (child.position.z < -50) child.position.z = 50;
+        }
+    });
+}
+
+function createGrassGround() {
+    const oldFloor = scene.children.find(child => child.name === 'floor');
+    if (oldFloor) {
+        scene.remove(oldFloor);
+    }
+    
+    // Load grass texture
+    const textureLoader = new THREE.TextureLoader();
+    
+    const loadTexture = (url) => {
+        return new Promise((resolve) => {
+            textureLoader.load(url, (texture) => {
+                resolve(texture);
+            });
+        });
+    };
+    
+    const grassUrls = {
+        diffuse: 'textures/grass/grass_diffuse.jpg',
+        normal: 'textures/grass/grass_normal.jpg',
+        roughness: 'textures/grass/grass_roughness.jpg',
+        displacement: 'textures/grass/grass_displacement.jpg'
+    };
+    
+    // Create a placeholder textured ground initially
+    const floorGeometry = new THREE.PlaneGeometry(100, 100, 32, 32);
+    const floorMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x7cba3b, // A nice grass green as base color
+        roughness: 0.8,
+        metalness: 0.1
+    });
+    
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1;
+    floor.receiveShadow = true;
+    floor.name = 'floor';
+    scene.add(floor);
+    
+    // Try to load textures asynchronously
+    Promise.all([
+        loadTexture(grassUrls.diffuse),
+        loadTexture(grassUrls.normal),
+        loadTexture(grassUrls.roughness),
+        loadTexture(grassUrls.displacement)
+    ]).then(([diffuseMap, normalMap, roughnessMap, displacementMap]) => {
+        // Apply repeat settings to all textures
+        [diffuseMap, normalMap, roughnessMap, displacementMap].forEach(texture => {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(20, 20);
+        });
+        
+        // Update the material with the loaded textures
+        floor.material.map = diffuseMap;
+        floor.material.normalMap = normalMap;
+        floor.material.roughnessMap = roughnessMap;
+        floor.material.displacementMap = displacementMap;
+        floor.material.displacementScale = 0.1;
+        floor.material.needsUpdate = true;
+        
+        console.log("Grass textures loaded successfully");
+    }).catch(error => {
+        console.warn("Could not load grass textures:", error);
+        console.log("Using basic green floor instead");
+    });
+    
+    // Add some simple grass blades for realism near the camera
+    addGrassBlades();
+    
+    return floor;
+}
+
+// Function to add some simple grass blades for added realism
+function addGrassBlades() {
+    // Use a simple plane geometry for grass blades
+    const bladeWidth = 0.1;
+    const bladeHeight = 0.5;
+    const bladeGeometry = new THREE.PlaneGeometry(bladeWidth, bladeHeight);
+    
+    // Create grass material with alpha transparency
+    const bladeMaterial = new THREE.MeshStandardMaterial({
+        color: 0x90c853,
+        side: THREE.DoubleSide,
+        alphaTest: 0.5
+    });
+    
+    // We'll create a limited number of grass blades for performance
+    const grassCount = 500;
+    const grassRadius = 6; // Only add grass within this radius of center
+    
+    // Create and position grass blades
+    for (let i = 0; i < grassCount; i++) {
+        // Create grass blade
+        const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+        
+        // Random position within a circle around the center
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * grassRadius;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        
+        // Position at floor level
+        blade.position.set(x, -0.9, z);
+        
+        // Random rotation
+        blade.rotation.y = Math.random() * Math.PI;
+        
+        // Random slight tilt
+        blade.rotation.x = Math.random() * 0.2;
+        
+        // Random scale variation
+        const scale = 0.7 + Math.random() * 0.6;
+        blade.scale.set(scale, scale, scale);
+        
+        scene.add(blade);
+    }
+    
+    console.log("Added grass blade details");
+}
+
+function addEnvironmentalElements() {
+    // Add a few rocks scattered around
+    const rockGeometry = new THREE.DodecahedronGeometry(0.5, 0);
+    const rockMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x888888, 
+        roughness: 0.9,
+        metalness: 0.2
+    });
+    
+    // Add a few rocks around the scene
+    for (let i = 0; i < 10; i++) {
+        const rock = new THREE.Mesh(rockGeometry, rockMaterial);
+        
+        // Random position around the perimeter
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 7 + Math.random() * 5; // Place rocks toward the edges
+        rock.position.set(
+            Math.cos(angle) * radius,
+            -0.9 + Math.random() * 0.2, // Vary height slightly
+            Math.sin(angle) * radius
+        );
+        
+        // Random rotation and scale
+        rock.rotation.set(
+            Math.random() * Math.PI,
+            Math.random() * Math.PI,
+            Math.random() * Math.PI
+        );
+        
+        const scale = 0.3 + Math.random() * 0.4;
+        rock.scale.set(scale, scale * 0.7, scale);
+        
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        
+        scene.add(rock);
+    }
+    
+    console.log("Added environmental elements");
+}
+
+// Create lightbulbs above each project
+function createLightbulbs() {
+    // First, check if lightbulbs already exist and remove them
+    scene.children.forEach(child => {
+        if (child.name === 'lightbulb') {
+            scene.remove(child);
+        }
+    });
+    
+    // Lightbulb materials
+    const bulbGlassMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffe0,        // Slight yellow tint
+        emissive: 0xffffe0,     // Self-illumination
+        emissiveIntensity: 0.4, // Moderate glow
+        transparent: true,      // Enable transparency
+        opacity: 0.9,           // Slightly transparent
+        roughness: 0.1,         // Glossy surface
+        metalness: 0.1          // Slightly metallic
+    });
+    
+    const bulbBaseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x777777,   // Metal gray
+        roughness: 0.5,
+        metalness: 0.8
+    });
+    
+    // Create lightbulb for each project position
+    projectPositions.forEach((position, index) => {
+        // Create lightbulb group
+        const lightbulbGroup = new THREE.Group();
+        lightbulbGroup.name = 'lightbulb';
+        
+        // Bulb glass (the actual light part)
+        const bulbGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+        const bulbGlass = new THREE.Mesh(bulbGeometry, bulbGlassMaterial);
+        
+        // Bulb base (metal part)
+        const baseGeometry = new THREE.CylinderGeometry(0.05, 0.1, 0.15, 16);
+        const bulbBase = new THREE.Mesh(baseGeometry, bulbBaseMaterial);
+        bulbBase.position.y = -0.2;
+        
+        // Add elements to the lightbulb group
+        lightbulbGroup.add(bulbGlass, bulbBase);
+        
+        // Position lightbulb above the project
+        lightbulbGroup.position.set(
+            position.x,
+            3, // Position high above the project
+            position.z
+        );
+        
+        // Add small point light inside the bulb
+        const bulbLight = new THREE.PointLight(0xffffcc, 1, 3);
+        bulbLight.position.set(0, 0, 0);
+        lightbulbGroup.add(bulbLight);
+        
+        // Store the bulb's target Y position for animation
+        lightbulbGroup.userData = {
+            targetY: 3,
+            originalY: 3,
+            lightIntensity: 1
+        };
+        
+        // Add lightbulb to scene
+        scene.add(lightbulbGroup);
+        lightbulbGroup.visible = false; // Initially hidden
+    });
+    
+    console.log("Created lightbulbs above projects");
+}
+
+// Show lightbulbs with animation
+function showLightbulbs() {
+    scene.children.forEach(child => {
+        if (child.name === 'lightbulb') {
+            // Make the lightbulb visible
+            child.visible = true;
+            
+            // Start from above the scene and drop down
+            child.position.y = 10;
+            
+            // Store target position at lightbulb's userData
+            child.userData.targetY = 3;
+            
+            // Get the point light inside the lightbulb group
+            const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
+            if (bulbLight) {
+                bulbLight.intensity = 0; // Start with no light
+                child.userData.lightIntensity = 1; // Target full intensity
+            }
+        }
+    });
+}
+
+// Hide lightbulbs with animation
+function hideLightbulbs() {
+    scene.children.forEach(child => {
+        if (child.name === 'lightbulb') {
+            // Store target position high above to fly up
+            child.userData.targetY = 10;
+            
+            // Get the point light inside the lightbulb group
+            const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
+            if (bulbLight) {
+                // Target zero intensity for fadeout
+                bulbLight.intensity = child.userData.lightIntensity; // Current intensity
+                child.userData.lightIntensity = 0; // Target intensity
+            }
+        }
+    });
+}
+
+// Animate lightbulbs in the main animation loop
+function animateLightbulbs(deltaTime) {
+    let allHidden = true;
+    
+    scene.children.forEach(child => {
+        if (child.name === 'lightbulb') {
+            // Check if lightbulb is visible
+            if (child.visible) {
+                allHidden = false;
+                
+                // Animate Y position
+                const targetY = child.userData.targetY;
+                const currentY = child.position.y;
+                
+                if (Math.abs(targetY - currentY) > 0.01) {
+                    // Move towards target position
+                    child.position.y += (targetY - currentY) * deltaTime * 3;
+                    
+                    // Get the point light inside the lightbulb group
+                    const bulbLight = child.children.find(c => c instanceof THREE.PointLight);
+                    if (bulbLight) {
+                        // Animate light intensity
+                        const targetIntensity = child.userData.lightIntensity;
+                        bulbLight.intensity += (targetIntensity - bulbLight.intensity) * deltaTime * 5;
+                    }
+                } else {
+                    // If moving up to hide and reached target, completely hide the lightbulb
+                    if (targetY > 5 && Math.abs(targetY - currentY) < 0.2) {
+                        child.visible = false;
+                    }
+                }
+                
+                // Make the lightbulbs sway slightly
+                const time = performance.now() * 0.001; // Current time in seconds
+                const swayFactor = Math.sin(time + child.position.x + child.position.z) * 0.03;
+                child.rotation.z = swayFactor;
+                
+                // Add a slight hover motion
+                const hoverOffset = Math.sin(time * 1.5 + child.position.x) * 0.05;
+                child.position.y += hoverOffset * deltaTime;
+            }
+        }
+    });
+    
+    return !allHidden; // Return true if any lightbulbs are still visible
+}
+
+// STEP 4: CREATE COMPLETE ENVIRONMENT
+function createEnvironment() {
+    // Create sky with clouds
+    const { sky, dirLight, hemiLight } = createSky();
+    
+    // Create grass ground
+    const floor = createGrassGround();
+    
+    // Add environmental elements
+    addEnvironmentalElements();
+    
+    // Create lightbulbs (initially hidden)
+    createLightbulbs();
+    
+    console.log("Environment created successfully");
+}
+
+// Lighting - Add point light for models
+const pointLight = new THREE.PointLight(0x8a9af8, 0.5, 15); // Reduced intensity and bluer color
+pointLight.position.set(0, 2, 0);
+scene.add(pointLight);
+
+// Create the environment after setting up basic scene components
+createEnvironment();
 
 // Array to store all model objects
 const models = [];
@@ -136,6 +616,12 @@ function loadProjectModels() {
                         projectId: position.id,
                         isInteractive: true
                     };
+                    
+                    // Enable shadows for all objects
+                    if (object.isMesh) {
+                        object.castShadow = true;
+                        object.receiveShadow = true;
+                    }
                 });
                 
                 scene.add(gltf.scene);
@@ -163,11 +649,11 @@ function loadProjectModels() {
 
 // Function to create a fallback model for a specific project
 function createFallbackModel(position) {
-    // Create a simple stand-in with basic geometry
     const bodyGeometry = new THREE.SphereGeometry(0.5, 16, 16);
     const headGeometry = new THREE.SphereGeometry(0.3, 16, 16);
     const earGeometry = new THREE.ConeGeometry(0.1, 0.2, 8);
     
+    // Choose a color based on project ID
     const colors = [
         0xf7d6aa, // Light orange
         0x5b5b5b, // Gray
@@ -183,17 +669,21 @@ function createFallbackModel(position) {
     // Create body parts
     const body = new THREE.Mesh(bodyGeometry, material);
     body.position.set(0, 0.5, 0);
+    body.castShadow = true;
     
     const head = new THREE.Mesh(headGeometry, material);
     head.position.set(0, 0.8, 0.5);
+    head.castShadow = true;
     
     const earLeft = new THREE.Mesh(earGeometry, material);
     earLeft.position.set(-0.15, 1.05, 0.5);
     earLeft.rotation.x = -Math.PI / 4;
+    earLeft.castShadow = true;
     
     const earRight = new THREE.Mesh(earGeometry, material);
     earRight.position.set(0.15, 1.05, 0.5);
     earRight.rotation.x = -Math.PI / 4;
+    earRight.castShadow = true;
     
     // Add all parts to the group
     modelGroup.add(body, head, earLeft, earRight);
@@ -226,12 +716,22 @@ function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
+    // Check if ANY section is currently active - if so, don't change cursor
+    if (document.getElementById('project-info').classList.contains('active') || 
+        document.getElementById('about-section').classList.contains('active') || 
+        document.getElementById('contact-section').classList.contains('active')) {
+        return; // Exit the function immediately, preventing cursor changes
+    }
+    
     // Highlight interactive objects on hover
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
     
-    // Reset all objects
+    // Reset cursor to default first
     document.body.style.cursor = 'default';
+    
+    // Only change to pointer if we actually intersect with an interactive object
+    let foundInteractive = false;
     
     // Check for interactive objects
     for (let i = 0; i < intersects.length; i++) {
@@ -245,14 +745,24 @@ function onMouseMove(event) {
         
         if (targetObj && targetObj.userData?.isInteractive) {
             document.body.style.cursor = 'pointer';
+            foundInteractive = true;
             break;
         }
     }
+    
+    // If we didn't find any interactive objects, make sure cursor is default
+    if (!foundInteractive) {
+        document.body.style.cursor = 'default';
+    }
 }
 
-
 function onClick(event) {
-    if (document.getElementById('project-info').classList.contains('active') || 
+    // Check if we just closed a container
+    if (window.justClosedContainer) {
+        return; // Skip processing this click
+    }
+    
+if (document.getElementById('project-info').classList.contains('active') || 
         document.getElementById('about-section').classList.contains('active') || 
         document.getElementById('contact-section').classList.contains('active')) {
         return; // Exit the function immediately, preventing any model interaction
@@ -276,8 +786,7 @@ function onClick(event) {
         
         if (targetObj && targetObj.userData?.isInteractive) {
             console.log("Clicked on interactive object with project ID:", targetObj.userData.projectId);
-            
-            // Show the project info using the function from index.html
+
             if (window.showProject) {
                 window.showProject(targetObj.userData.projectId);
             } else {
@@ -288,7 +797,6 @@ function onClick(event) {
             const modelPosition = new THREE.Vector3().copy(targetObj.position);
             
             // Calculate a position that's at an angle from the model
-            // This avoids looking directly at the center
             const angle = Math.random() * Math.PI; // Random angle around the model
             const radius = 2.5; // Distance from model
             const cameraX = modelPosition.x + Math.cos(angle) * radius;
@@ -324,14 +832,16 @@ function moveCamera(x, y, z, lookX, lookY, lookZ) {
 
 // Reset camera to default position
 function resetCamera() {
+    console.log("Resetting camera to default position");
     moveCamera(3, 2, 5, 0, 0, 0);
-    console.log("Camera reset to default position");
+    hideLightbulbs(); // Hide lightbulbs when returning to home view
 }
 
 // Show all projects (top-down view)
 function viewAllProjects() {
     moveCamera(0, 6, 0, 0, 0, 0);
-    console.log("Camera moved to show all projects view");
+    showLightbulbs(); // Show lightbulbs when viewing projects
+    console.log("Camera moved to show all projects view with lightbulbs");
 }
 
 // Expose functions to be called from HTML
@@ -367,6 +877,25 @@ function animate() {
     // Animate the point light in a circular motion
     pointLight.position.x = Math.sin(elapsedTime * 0.5) * 5;
     pointLight.position.z = Math.cos(elapsedTime * 0.5) * 5;
+    
+    // Animate grass blades slightly
+    scene.children.forEach(child => {
+        // Find all grass blade meshes by their material color
+        if (child.isMesh && 
+            child.material && 
+            child.material.color && 
+            child.material.color.getHex() === 0x90c853) {
+            // Apply subtle swaying motion
+            child.rotation.x = Math.sin(elapsedTime * 0.5 + child.position.x) * 0.05 + 0.1;
+            child.rotation.z = Math.cos(elapsedTime * 0.5 + child.position.z) * 0.05;
+        }
+    });
+    
+    // Animate clouds
+    animateClouds(deltaTime);
+    
+    // Animate lightbulbs
+    animateLightbulbs(deltaTime);
     
     // Camera smooth transitions (only when animating)
     if (cameraAnimating) {
@@ -408,4 +937,79 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Disable the original onMouseMove function
+window.removeEventListener('mousemove', onMouseMove);
+
+// Completely rewrite the cursor handling approach
+function setupCursorHandling() {
+    console.log("Setting up improved cursor handling");
+    
+    // Get the canvas element
+    const canvas = renderer.domElement;
+    
+    // Force the default cursor on the canvas
+    canvas.style.cursor = 'default';
+    
+    // Add our own mouse move handler directly to the canvas
+    canvas.addEventListener('mousemove', (event) => {
+      // Default to normal cursor
+      canvas.style.cursor = 'default';
+      
+      // Skip if any panels are open
+      if (document.getElementById('project-info').classList.contains('active') || 
+          document.getElementById('about-section').classList.contains('active') || 
+          document.getElementById('contact-section').classList.contains('active')) {
+        return;
+      }
+      
+      // Calculate normalized mouse coordinates for raycasting
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = ((event.clientX - rect.left) / canvas.width) * 2 - 1;
+      const mouseY = -((event.clientY - rect.top) / canvas.height) * 2 + 1;
+      
+      // Set up temporary vector for raycasting
+      const tempMouse = new THREE.Vector2(mouseX, mouseY);
+      
+      // Use raycaster with our temporary mouse position
+      raycaster.setFromCamera(tempMouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      
+      // Check for intersections with interactive objects
+      let hoveredInteractive = false;
+      
+      for (let i = 0; i < intersects.length; i++) {
+        let obj = intersects[i].object;
+        
+        // Traverse up to find interactive parent
+        while (obj && !obj.userData?.isInteractive) {
+          obj = obj.parent;
+        }
+        
+        // If found interactive object, change cursor and exit loop
+        if (obj && obj.userData?.isInteractive) {
+          canvas.style.cursor = 'pointer';
+          hoveredInteractive = true;
+          break;
+        }
+      }
+      
+      // If no interactive objects found, ensure cursor is default
+      if (!hoveredInteractive) {
+        canvas.style.cursor = 'default';
+      }
+    });
+    
+    // Also update the global mouse position for other functions
+    canvas.addEventListener('mousemove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / canvas.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / canvas.height) * 2 + 1;
+    });
+    
+    console.log("Cursor handling setup complete");
+}
+  
+// Call this function after the renderer is initialized
+setupCursorHandling();
+  
 console.log("3D portfolio initialization complete, animation loop started");

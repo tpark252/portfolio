@@ -30,21 +30,56 @@
             pointer-events: none;
             z-index: 10;
         }
-        .header {
-            position: absolute;
-            top: 40px;
-            left: 40px;
-            pointer-events: auto;
-        }
-        .name {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .title {
-            font-size: 1rem;
-            opacity: 0.8;
-        }
+            .header {
+        position: absolute;
+        top: 40px;
+        left: 40px;
+        pointer-events: auto;
+    }
+
+
+            .name-section {
+                background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(5px); /* Creates a subtle blur effect */
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .name-section:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            }
+
+            .name {
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+
+            .title {
+                font-size: 1rem;
+                opacity: 0.9; /* Increased opacity for better visibility */
+            }
+
+            /* Styling for the LinkedIn icon */
+            .linkedin-link {
+                display: inline-block;
+                margin-top: 5px;
+                color: white;
+                opacity: 0.8;
+                transition: opacity 0.3s ease;
+            }
+
+            .linkedin-link:hover {
+                opacity: 1;
+            }
+
+            .linkedin-icon {
+                vertical-align: middle;
+            }
         .nav {
             position: absolute;
             bottom: 40px;
@@ -136,15 +171,21 @@
         }
         .project-media {
             width: 100%;
-            max-width: 900px;
+            max-width: 800px;
             margin: 30px auto;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-        .project-media img, .project-media video {
+        .project-media video {
             width: 100%;
             display: block;
+        }
+        .project-media img {
+            max-width: 300px; /* or whatever max-width you prefer */
+            width: 100%;
+            display: block;
+            margin: 0 auto; /* This centers the image if it's smaller than its container */
         }
         .project-content {
             margin-top: 30px;
@@ -361,7 +402,6 @@
                         <!-- Additional project details will be inserted here -->
                     </div>
                     <div class="project-links">
-                        <a href="#" class="project-link" target="_blank">View Live Project</a>
                         <a href="#" class="project-link project-github-link">View Code</a>
                     </div>
                 </div>
@@ -431,11 +471,8 @@
     </div>
 
     <script type="module" src="main.js"></script>
-
-    <!-- Portfolio interaction script -->
     <script>
-        // Project data
-        // Project data with video for Bicep Curl Counter
+
         const projects = [
             {
                 title: "Generative AI Summarizer",
@@ -445,8 +482,7 @@
                     url: "/assets/videos/lecturesum.mp4"  
                 },
                 techStack: ["React", "Vite", "Tailwind CSS", "Flask", "OpenAI GPT-4", "Whisper API", "jsPDF"],
-                link: "#",
-                githubLink: "#", 
+                githubLink: "https://github.com/tpark252/summarizer", 
                 details: "This application allows users to upload lecture videos for automatic transcription and summarization. The Flask backend handles audio extraction, compression, and processing through OpenAI's latest SDKs. The simple responsive frontend features light/dark mode toggle, real-time progress tracking, intuitive file upload interface, and smooth transitions for optimal user experience."
             },
             {
@@ -457,8 +493,7 @@
                     url: "/assets/videos/bicep curl.mp4" 
                 },
                 techStack: ["HTML/CSS", "JavaScript", "TensorFlow.js", "MoveNet", "Pose Detection API"],
-                link: "#",
-                githubLink: "#", 
+                githubLink: "https://github.com/tpark252/Bicep-Curl", 
                 details: "This browser-based application leverages the TensorFlow.js MoveNet model to detect and track body poses through a webcam. It precisely monitors arm angles during bicep curls, counting repetitions for both left and right arms independently. The app features real-time skeleton visualization with color-coded feedback, performance optimizations for smooth frame rates, and a straightforward user interface."
             },
             {
@@ -474,16 +509,15 @@
                 details: "This portfolio website uses 3D graphics to create an immersive user experience. The interactive elements include a custom navigation system, animated project showcases, and responsive design that works across devices. Performance optimization ensures fast loading even with complex 3D elements."
             },
             {
-                title: "Social Media Dashboard",
-                description: "A comprehensive analytics dashboard that tracks engagement metrics across multiple social media platforms in a unified interface.",
-                media: {
-                    type: "image",
-                    url: "/api/placeholder/600/400"  
+                "title": "NBA Stats AI Assistant",
+                "description": "An intelligent conversational bot that provides real-time NBA statistics, game results, player data, and team information using ESPN's reverse engineered API and OpenAI's GPT-4.",
+                "media": {
+                    "type": "video",
+                    "url": "/assets/videos/ESPN.mp4"
                 },
-                techStack: ["Vue.js", "D3.js", "Python", "Social Media APIs"],
-                link: "#",
-                githubLink: "#", 
-                details: "The social media dashboard integrates with Facebook, Instagram, Twitter, and LinkedIn APIs to pull performance data into a single interface. Features include customizable widgets, automated reporting, competitor analysis, and content scheduling tools. Data visualization components make complex metrics easy to understand."
+                "techStack": ["React.js", "Node.js", "Express", "OpenAI API", "ESPN API"],
+                "githubLink": "https://github.com/tpark252/nbastats",
+                "details": "The NBA Stats AI Assistant creates a seamless conversational interface for accessing comprehensive basketball statistics. Built with React for the frontend and Express for the backend, this application integrates a reverse engineered ESPN API for real-time data with GPT-4 for natural language processing. Features include game score visualization, player statistics analysis, team schedule tracking, and league standings. The bot intelligently formats data for readability, with custom styling for game results and player stats cards. It handles complex queries about specific games, players, and dates while maintaining conversation context for follow-up questions."
             }
         ];
         const projectInfo = document.getElementById('project-info');
@@ -491,7 +525,6 @@
         const contactSection = document.getElementById('contact-section');
         let sceneClickHandler = null;
 
-        // Single, unified function to close containers
         function closeAllContainers() {
             // Close all containers
             projectInfo.classList.remove('active');
@@ -601,15 +634,14 @@ document.addEventListener('click', handleContentClick);
             projectInfo.querySelector('.project-title').textContent = project.title;
             projectInfo.querySelector('.project-desc').textContent = project.description;
             
-            // Update links
-            const projectLinks = projectInfo.querySelectorAll('.project-link');
-            projectLinks[0].href = project.link;
+
+            const githubLink = projectInfo.querySelector('.project-github-link');
             if (project.githubLink) {
-                projectLinks[1].href = project.githubLink;
-                projectLinks[1].style.display = 'inline-block';
+                githubLink.href = project.githubLink;
+                githubLink.style.display = 'inline-block';
             } else {
-                projectLinks[1].style.display = 'none';
-            }
+                githubLink.style.display = 'none';
+        }
             
 
             const projectMedia = document.getElementById('project-media');

@@ -348,7 +348,8 @@
         "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
         "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js",
         "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js",
-        "three/examples/jsm/objects/Sky.js": "https://unpkg.com/three@0.128.0/examples/jsm/objects/Sky.js"
+        "three/examples/jsm/objects/Sky.js": "https://unpkg.com/three@0.128.0/examples/jsm/objects/Sky.js",
+        "three/examples/jsm/libs/meshopt_decoder.module.js": "https://unpkg.com/three@0.128.0/examples/jsm/libs/meshopt_decoder.module.js"
       }
     }
     </script>
@@ -402,7 +403,7 @@
                         <!-- Additional project details will be inserted here -->
                     </div>
                     <div class="project-links">
-                        <a href="#" class="project-link project-github-link">View Code</a>
+                        <a href="#" class="project-link project-github-link" target="_blank">View Code</a>
                     </div>
                 </div>
             </div>
@@ -518,6 +519,17 @@
                 "techStack": ["React.js", "Node.js", "Express", "OpenAI API", "ESPN API"],
                 "githubLink": "https://github.com/tpark252/nbastats",
                 "details": "The NBA Stats AI Assistant creates a seamless conversational interface for accessing comprehensive basketball statistics. Built with React for the frontend and Express for the backend, this application integrates a reverse engineered ESPN API for real-time data with GPT-4 for natural language processing. Features include game score visualization, player statistics analysis, team schedule tracking, and league standings. The bot intelligently formats data for readability, with custom styling for game results and player stats cards. It handles complex queries about specific games, players, and dates while maintaining conversation context for follow-up questions."
+            },
+            {
+                "title": "Gestural Mixer",
+                "description": "An innovative audio mixing interface controlled through hand gestures, allowing for intuitive and expressive control of audio parameters.",
+                "media": {
+                    "type": "video",
+                    "url": "/assets/videos/gesturalfx.mp4"
+                },
+                "techStack": ["JavaScript", "WebAudio API", "TensorFlow.js", "Hand Pose Detection", "Three.js"],
+                "githubLink": "https://github.com/tpark252/gesturalmixer",
+                "details": "The Gestural Mixer project enables musicians and audio engineers to control mixing parameters using hand movements captured through a webcam. Built with TensorFlow.js for hand tracking and WebAudio API for sound processing, this application transforms physical gestures into precise audio control. The interface provides real-time visual feedback of hand positions and corresponding audio parameter changes, creating an immersive and intuitive mixing experience."
             }
         ];
         const projectInfo = document.getElementById('project-info');

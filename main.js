@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js'; 
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 // Debug logging
 console.log("Starting 3D portfolio initialization");
@@ -35,9 +36,10 @@ controls.target.set(0, 0, 0); // Initial look target
 
 const projectPositions = [
     { x: -2, y: -1, z: -2, rotation: Math.PI * 0.25, id: 0, model: 'cat' },
-    { x: 2, y: -1, z: -2, rotation: Math.PI * 0.75, id: 1, model: 'cats' },
+    { x: 2, y: 1, z: -2, rotation: Math.PI * 0.75, id: 1, model: 'cats' },
     { x: -2, y: -1, z: 2, rotation: Math.PI * 1.25, id: 2, model: 'maxwell' },
-    { x: 2, y: -1, z: 2, rotation: Math.PI * 1.75, id: 3, model: 'oiia' }
+    { x: 2, y: -1, z: 2, rotation: Math.PI * 1.75, id: 3, model: 'oiia' },
+    { x: 0, y: 0, z: 0, rotation: Math.PI * 1.0, id: 4, model: 'gesturalmixer' }
 ];
 
 function createSky() {
@@ -493,13 +495,16 @@ const modelScales = {
     'cat': 3.5,
     'cats': 0.1,
     'maxwell': 0.05,
-    'oiia': 2.5
+    'oiia': 2.5,
+    'gesturalmixer': 3.0  // Reduced scale factor for gesturalmixer model
 };
 
 // Load each model for its specific project
 function loadProjectModels() {
     console.log("Loading individual project models");
     const loader = new GLTFLoader();
+    // Add meshopt decoder support
+    loader.setMeshoptDecoder(MeshoptDecoder);
     let loadedCount = 0;
     
     // Function to update the loading progress

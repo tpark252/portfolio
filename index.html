@@ -415,7 +415,7 @@
             <p>Hi, I'm Timothy Park. I'm a Developer and Project Manager; more importantly, I'm a lifelong student who enjoys learning and progression.</p>
             <p>With a background in developing applications and managing technical projects, I bring a unique perspective to every project I work on. My approach combines technical expertise with a strong focus on user experience and business objectives.</p>
             <p>I have experience working with Generative AI, Project and Product Management.</p>
-            <p>My focus has been on ensuring successful project outcomes through effective management and technical expertise. Thanks for checking my website out.</p>
+            <p>My focus has been on ensuring successful project outcomes through effective management and technical expertise.</p>
 
             <h3>Skills & Technologies</h3>
 
@@ -538,6 +538,14 @@
         let sceneClickHandler = null;
 
         function closeAllContainers() {
+            // Stop any playing videos
+            const projectMedia = document.getElementById('project-media');
+            const videos = projectMedia.querySelectorAll('video');
+            videos.forEach(video => {
+                video.pause();
+                video.currentTime = 0;
+            });
+            
             // Close all containers
             projectInfo.classList.remove('active');
             aboutSection.classList.remove('active');

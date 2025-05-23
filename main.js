@@ -842,7 +842,7 @@ function animate() {
     // Use requestAnimationFrame's timing for smoother animations
     const now = performance.now() * 0.001; // Convert to seconds
     
-    // Animate models (bobbing motion and continuous rotation)
+    // Animate models (bobbing motion only)
     models.forEach((model, index) => {
         // Skip if model is not visible or not properly initialized
         if (!model || !model.visible) return;
@@ -854,9 +854,7 @@ function animate() {
             model.position.y = Math.sin(now + index) * 0.1 - 0.9;
         }
         
-        // Apply continuous rotation with time-based movement
-        // This ensures rotation speed is consistent regardless of frame rate
-        model.rotation.y += 0.005 * deltaTime * 60; // Normalize to 60fps
+        // No rotation - models will only bob up and down
     });
     
     // Animate the point light in a circular motion

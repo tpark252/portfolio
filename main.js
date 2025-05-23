@@ -12,14 +12,20 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(3, 2, 5);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true,
+    powerPreference: 'high-performance'
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x111111);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for better performance
 document.body.appendChild(renderer.domElement);
 
-// Enable shadows for more realistic rendering
+// Enable shadows for more realistic rendering but with optimized settings
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false; // Only update shadows when needed
+renderer.shadowMap.needsUpdate = true; // Initial shadow map update
 
 console.log("Renderer created and added to DOM");
 
@@ -553,7 +559,7 @@ function loadProjectModels() {
                     initialY: position.y
                 };
                 
-                // Make all children interactive too
+                // Make all children interactive too and optimize meshes
                 gltf.scene.traverse(function(object) {
                     object.userData = {
                         projectId: position.id,
@@ -564,6 +570,27 @@ function loadProjectModels() {
                     if (object.isMesh) {
                         object.castShadow = true;
                         object.receiveShadow = true;
+                        
+                        // Optimize geometry if it has a lot of vertices
+                        if (object.geometry && object.geometry.attributes.position && 
+                            object.geometry.attributes.position.count > 5000) {
+                            object.geometry.attributes.position.usage = THREE.StaticDrawUsage;
+                            object.geometry.attributes.normal.usage = THREE.StaticDrawUsage;
+                            if (object.geometry.attributes.uv) {
+                                object.geometry.attributes.uv.usage = THREE.StaticDrawUsage;
+                            }
+                        }
+                        
+                        // Optimize materials
+                        if (object.material) {
+                            // Use medium precision for shaders
+                            object.material.precision = 'mediump';
+                            
+                            // Disable unnecessary features for better performance
+                            if (!object.material.map) {
+                                object.material.flatShading = true;
+                            }
+                        }
                     }
                 });
                 
@@ -812,40 +839,46 @@ function animate() {
     // Update orbit controls
     controls.update();
     
+    // Use requestAnimationFrame's timing for smoother animations
+    const now = performance.now() * 0.001; // Convert to seconds
+    
     // Animate models (bobbing motion and continuous rotation)
     models.forEach((model, index) => {
+        // Skip if model is not visible or not properly initialized
+        if (!model || !model.visible) return;
+        
         // Make models bob up and down slightly
         if (model.userData && model.userData.initialY !== undefined) {
-            model.position.y = Math.sin(elapsedTime + index) * 0.1 + model.userData.initialY;
+            model.position.y = Math.sin(now + index) * 0.1 + model.userData.initialY;
         } else {
-            model.position.y = Math.sin(elapsedTime + index) * 0.1 - 0.9;
+            model.position.y = Math.sin(now + index) * 0.1 - 0.9;
         }
         
-        // Apply continuous rotation - use a fixed value for reliable rotation
-        model.rotation.y += 0.005; // Small constant value for smooth rotation
+        // Apply continuous rotation with time-based movement
+        // This ensures rotation speed is consistent regardless of frame rate
+        model.rotation.y += 0.005 * deltaTime * 60; // Normalize to 60fps
     });
     
     // Animate the point light in a circular motion
-    pointLight.position.x = Math.sin(elapsedTime * 0.5) * 5;
-    pointLight.position.z = Math.cos(elapsedTime * 0.5) * 5;
+    pointLight.position.x = Math.sin(now * 0.5) * 5;
+    pointLight.position.z = Math.cos(now * 0.5) * 5;
     
-    // Animate grass blades slightly
+    // Animate grass blades slightly - optimize by only processing visible blades
     scene.children.forEach(child => {
         // Find all grass blade meshes by their material color
         if (child.isMesh && 
+            child.visible &&
             child.material && 
             child.material.color && 
             child.material.color.getHex() === 0x90c853) {
             // Apply subtle swaying motion
-            child.rotation.x = Math.sin(elapsedTime * 0.5 + child.position.x) * 0.05 + 0.1;
-            child.rotation.z = Math.cos(elapsedTime * 0.5 + child.position.z) * 0.05;
+            child.rotation.x = Math.sin(now * 0.5 + child.position.x) * 0.05 + 0.1;
+            child.rotation.z = Math.cos(now * 0.5 + child.position.z) * 0.05;
         }
     });
     
     // Animate clouds
     animateClouds(deltaTime);
-
-
     
     // Camera smooth transitions (only when animating)
     if (cameraAnimating) {

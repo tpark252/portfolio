@@ -909,7 +909,8 @@ animate();
 
 // Add event listeners
 window.addEventListener('mousemove', onMouseMove);
-window.addEventListener('click', onClick);
+// Disable window-level click handler as we now have a canvas-specific one
+// window.addEventListener('click', onClick);
 
 // Resize handling
 window.addEventListener('resize', () => {
@@ -987,7 +988,120 @@ function setupCursorHandling() {
       mouse.y = -((event.clientY - rect.top) / canvas.height) * 2 + 1;
     });
     
-    console.log("Cursor handling setup complete");
+    // Function to handle interaction (both mouse clicks and touch)
+    let interactionCooldown = false;
+    
+    function handleInteraction(eventX, eventY, event) {
+      // If we're in cooldown, ignore this interaction
+      if (interactionCooldown) {
+        console.log("Interaction ignored due to cooldown");
+        return false;
+      }
+      
+      // Skip if any panels are open - don't prevent propagation in this case
+      if (document.getElementById('project-info').classList.contains('active') || 
+          document.getElementById('about-section').classList.contains('active') || 
+          document.getElementById('contact-section').classList.contains('active')) {
+        return false;
+      }
+      
+      // Prevent event from propagating further - only if no containers are open
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
+      // Calculate normalized coordinates for raycasting
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = ((eventX - rect.left) / canvas.width) * 2 - 1;
+      const mouseY = -((eventY - rect.top) / canvas.height) * 2 + 1;
+      
+      // Skip if we just closed a container
+      if (window.justClosedContainer) {
+        return false;
+      }
+      
+      // Skip if any panels are open
+      if (document.getElementById('project-info').classList.contains('active') || 
+          document.getElementById('about-section').classList.contains('active') || 
+          document.getElementById('contact-section').classList.contains('active')) {
+        return false;
+      }
+      
+      // Set up raycaster with current mouse position
+      raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      
+      // Check for interactions with models
+      for (let i = 0; i < intersects.length; i++) {
+        const object = intersects[i].object;
+        
+        // Find the parent object with userData if available
+        let targetObj = object;
+        while (targetObj && !targetObj.userData?.isInteractive) {
+          targetObj = targetObj.parent;
+        }
+        
+        if (targetObj && targetObj.userData?.isInteractive) {
+          console.log("Interaction with object ID:", targetObj.userData.projectId);
+          
+          // Set cooldown to prevent multiple interactions
+          interactionCooldown = true;
+          setTimeout(() => {
+            interactionCooldown = false;
+          }, 1000); // 1 second cooldown
+          
+          if (window.showProject) {
+            window.showProject(targetObj.userData.projectId);
+          } else {
+            console.error("showProject function not found in window object");
+          }
+          
+          // Animate camera to focus on this model
+          const modelPosition = new THREE.Vector3().copy(targetObj.position);
+          const angle = Math.random() * Math.PI;
+          const radius = 2.5;
+          const cameraX = modelPosition.x + Math.cos(angle) * radius;
+          const cameraZ = modelPosition.z + Math.sin(angle) * radius;
+          
+          moveCamera(
+            cameraX,
+            modelPosition.y + 1.5,
+            cameraZ,
+            modelPosition.x, modelPosition.y, modelPosition.z
+          );
+          
+          return true; // Interaction handled
+        }
+      }
+      
+      return false; // No interaction
+    }
+    
+    // Add click event handler directly to the canvas for better cross-device compatibility
+    canvas.addEventListener('click', (event) => {
+      // Check if any containers are active - if so, don't handle model interactions
+      if (document.getElementById('project-info').classList.contains('active') || 
+          document.getElementById('about-section').classList.contains('active') || 
+          document.getElementById('contact-section').classList.contains('active')) {
+        return;
+      }
+      
+      handleInteraction(event.clientX, event.clientY, event);
+    });
+    
+    // Add touch support for mobile devices
+    canvas.addEventListener('touchstart', (event) => {
+      // Prevent default to avoid scrolling
+      event.preventDefault();
+      
+      if (event.touches.length > 0) {
+        const touch = event.touches[0];
+        handleInteraction(touch.clientX, touch.clientY, event);
+      }
+    }, { passive: false, capture: true });
+    
+    console.log("Cursor and touch handling setup complete");
 }
   
 // Call this function after the renderer is initialized

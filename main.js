@@ -1101,6 +1101,107 @@ function setupCursorHandling() {
       }
     }, { passive: false, capture: true });
     
+    // Add MacOS-specific handlers
+    
+    // Add pointer events for better trackpad support on MacOS
+    if ('PointerEvent' in window) {
+      console.log("Pointer events supported - adding MacOS trackpad support");
+      
+      // Handle pointer up events (for trackpad taps)
+      canvas.addEventListener('pointerup', function(event) {
+        // Only handle touch-type pointer events (trackpad)
+        if (event.pointerType === 'touch') {
+          console.log("MacOS trackpad tap detected");
+          
+          // Skip if any containers are active
+          if (document.getElementById('project-info').classList.contains('active') || 
+              document.getElementById('about-section').classList.contains('active') || 
+              document.getElementById('contact-section').classList.contains('active')) {
+            return;
+          }
+          
+          // Skip if we're in cooldown
+          if (interactionCooldown) {
+            return;
+          }
+          
+          // Handle the interaction
+          handleInteraction(event.clientX, event.clientY, event);
+        }
+      });
+    }
+    
+    // Add support for Force Touch on newer MacBooks
+    if (typeof window.onwebkitmouseforcechanged !== 'undefined') {
+      console.log("Force Touch support detected");
+      canvas.addEventListener('webkitmouseforcechanged', function(event) {
+        // Force Touch is being used (pressure sensitive click on newer MacBooks)
+        if (event.webkitForce > 2) { // Force click threshold
+          console.log("Force Touch detected on MacBook");
+          
+          // Skip if any containers are active
+          if (document.getElementById('project-info').classList.contains('active') || 
+              document.getElementById('about-section').classList.contains('active') || 
+              document.getElementById('contact-section').classList.contains('active')) {
+            return;
+          }
+          
+          // Handle as a regular click for interaction
+          handleInteraction(event.clientX, event.clientY, event);
+          
+          // Prevent default behavior
+          event.preventDefault();
+        }
+      });
+    }
+    
+    // Add support for MacOS Magic Trackpad two-finger tap (right-click)
+    canvas.addEventListener('contextmenu', function(event) {
+      // Prevent the default context menu
+      event.preventDefault();
+      
+      // Skip if any containers are active
+      if (document.getElementById('project-info').classList.contains('active') || 
+          document.getElementById('about-section').classList.contains('active') || 
+          document.getElementById('contact-section').classList.contains('active')) {
+        return;
+      }
+      
+      console.log("Detected right-click or two-finger tap on MacOS");
+      
+      // Handle as a regular click for interaction
+      handleInteraction(event.clientX, event.clientY, event);
+    });
+    
+    // Add gesture support for MacOS trackpads (pinch to zoom)
+    if ('ongestureend' in window) {
+      console.log("Gesture events supported - adding pinch-to-zoom for MacOS");
+      
+      canvas.addEventListener('gestureend', function(event) {
+        // Handle pinch gestures (common on MacOS trackpads)
+        if (event.scale !== 1) {
+          // Skip if any containers are active
+          if (document.getElementById('project-info').classList.contains('active') || 
+              document.getElementById('about-section').classList.contains('active') || 
+              document.getElementById('contact-section').classList.contains('active')) {
+            return;
+          }
+          
+          console.log("Pinch gesture detected on MacOS trackpad");
+          
+          // Adjust camera zoom based on gesture scale
+          if (controls && controls.zoom) {
+            const zoomFactor = event.scale > 1 ? 0.9 : 1.1;
+            controls.dollyIn(zoomFactor);
+            controls.update();
+          }
+          
+          // Prevent default to avoid browser zoom
+          event.preventDefault();
+        }
+      });
+    }
+    
     console.log("Cursor and touch handling setup complete");
 }
   

@@ -46,6 +46,7 @@
                 backdrop-filter: blur(5px); /* Creates a subtle blur effect */
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 transition: all 0.3s ease;
+                cursor: pointer;
             }
 
             .name-section:hover {
@@ -365,7 +366,7 @@
 
     <div class="overlay">
         <div class="header">
-            <div class="name-section">
+            <div class="name-section clickable-about">
                 <div class="name">Timothy Park</div>
                 <div class="title">Developer & Project Manager</div>
                 <a href="https://www.linkedin.com/in/tpark252/" target="_blank" class="linkedin-link">
@@ -380,7 +381,7 @@
             <div class="nav-item" data-section="intro">Home</div>
             <div class="nav-item" data-section="about">About</div>
             <div class="nav-item" data-section="projects">Projects</div>
-            <div class="nav-item" data-section="contact">Contact Me</div>
+            <div class="nav-item" data-section="contact">Contact</div>
         </div>
 
         <div class="controls-hint">
@@ -498,7 +499,7 @@
                 details: "This browser-based application leverages the TensorFlow.js MoveNet model to detect and track body poses through a webcam. It precisely monitors arm angles during bicep curls, counting repetitions for both left and right arms independently. The app features real-time skeleton visualization with color-coded feedback, performance optimizations for smooth frame rates, and a straightforward user interface."
             },
             {
-                title: "3D Portfolio Website",
+                title: "This Portfolio Website",
                 description: "An interactive 3D portfolio website showcasing creative work with Three.js animations and smooth user interface.",
                 media: {
                     type: "image",
@@ -554,91 +555,58 @@
             // Show navigation when returning to 3D view
             document.querySelector('.nav').style.display = 'flex';
             
-            // Reset camera to default home view
-            if (window.resetCamera) {
+            // Only reset camera if we're actually closing to return to the home view
+            // and not just switching between views
+            if (window.resetCamera && !window.preventCameraReset) {
                 window.resetCamera();
             }
+            
+            // Reset the preventCameraReset flag after a short delay
+            setTimeout(() => {
+                window.preventCameraReset = false;
+            }, 100);
         }
 
-function handleContentClick(event) {
-    // Get all active containers
-    const projectInfo = document.getElementById('project-info');
-    const aboutSection = document.getElementById('about-section');
-    const contactSection = document.getElementById('contact-section');
-    
-    // Check which containers are active
-    let activeContainer = null;
-    if (projectInfo.classList.contains('active')) activeContainer = projectInfo;
-    if (aboutSection.classList.contains('active')) activeContainer = aboutSection;
-    if (contactSection.classList.contains('active')) activeContainer = contactSection;
-    
-    // If no containers are active, do nothing
-    if (!activeContainer) return;
-    
-    // For project container, check if clicked directly on the container background
-    // but not on any of its content elements
-    if (activeContainer === projectInfo) {
-        const projectContainer = projectInfo.querySelector('.project-container');
-        
-        // If clicked on the project-info (container background) but NOT on the project-container (content)
-        if (event.target === projectInfo && !projectContainer.contains(event.target)) {
-            closeAllContainers();
-            
-            // Set a brief flag to prevent 3D model clicks from triggering
-            window.justClosedContainer = true;
-            setTimeout(() => {
-                window.justClosedContainer = false;
-            }, 300);
-            
-            event.stopPropagation();
-            return;
-        }
-    }
-    
-    if (activeContainer === aboutSection || activeContainer === contactSection) {
-        // If clicked directly on the section-content container but not a child element
-        if (event.target === activeContainer) {
-            closeAllContainers();
-            
-            // Set a brief flag to prevent 3D model clicks from triggering
-            window.justClosedContainer = true;
-            setTimeout(() => {
-                window.justClosedContainer = false;
-            }, 300);
-            
-            event.stopPropagation();
-            return;
-        }
-    }
-}
-
-// Make sure to add the event listener
-document.addEventListener('click', handleContentClick);
         // Single handler for clicks outside containers
         function handleOutsideClick(event) {
-            // Get all active containers
-            const activeContainers = [];
-            if (projectInfo.classList.contains('active')) activeContainers.push(projectInfo);
-            if (aboutSection.classList.contains('active')) activeContainers.push(aboutSection);
-            if (contactSection.classList.contains('active')) activeContainers.push(contactSection);
+            // Check which containers are active
+            const isProjectActive = projectInfo.classList.contains('active');
+            const isAboutActive = aboutSection.classList.contains('active');
+            const isContactActive = contactSection.classList.contains('active');
             
             // If no containers are active, do nothing
-            if (activeContainers.length === 0) return;
+            if (!isProjectActive && !isAboutActive && !isContactActive) return;
             
-            const clickedOutside = !activeContainers.some(container => 
-                container.contains(event.target) || 
-                event.target.classList.contains('nav-item') ||
+            // Check if clicked on elements that should be ignored
+            if (event.target.classList.contains('close-btn') || 
                 event.target.classList.contains('back-btn') ||
-                event.target.classList.contains('close-btn')
-            );
+                event.target.classList.contains('nav-item') ||
+                event.target.closest('.nav-item') ||
+                event.target.closest('.name-section')) {
+                return;
+            }
             
-            if (clickedOutside) {
-                // Prevent the click from propagating
-                event.stopPropagation();
-                
-                // Close all containers
+            // Special handling for project-info: close if clicked directly on the project-info element
+            // but not on its child project-container
+            if (isProjectActive && event.target === projectInfo) {
+                console.log('Clicked on project-info background, closing');
                 closeAllContainers();
                 
+                // Set brief flag to prevent 3D model clicks from triggering
+                window.justClosedContainer = true;
+                setTimeout(() => {
+                    window.justClosedContainer = false;
+                }, 300);
+                return;
+            }
+            
+            // For about and contact sections, close if clicked outside the container
+            if ((isAboutActive && !aboutSection.contains(event.target)) || 
+                (isContactActive && !contactSection.contains(event.target))) {
+                console.log('Clicked outside about/contact section, closing');
+                closeAllContainers();
+                
+                // Set brief flag to prevent 3D model clicks from triggering
                 window.justClosedContainer = true;
                 setTimeout(() => {
                     window.justClosedContainer = false;
@@ -648,22 +616,23 @@ document.addEventListener('click', handleContentClick);
 
         // Clean function for showing project info
         function showProjectInfo(projectId) {
+            // Set flag to prevent camera reset during container closing
+            window.preventCameraReset = true;
+            
             const project = projects[projectId];
             
             // Set basic info
             projectInfo.querySelector('.project-title').textContent = project.title;
             projectInfo.querySelector('.project-desc').textContent = project.description;
             
-
             const githubLink = projectInfo.querySelector('.project-github-link');
             if (project.githubLink) {
                 githubLink.href = project.githubLink;
                 githubLink.style.display = 'inline-block';
             } else {
                 githubLink.style.display = 'none';
-        }
+            }
             
-
             const projectMedia = document.getElementById('project-media');
             projectMedia.innerHTML = '';
             if (project.media) {
@@ -710,6 +679,11 @@ document.addEventListener('click', handleContentClick);
             
             // Hide navigation during full screen view
             document.querySelector('.nav').style.display = 'none';
+            
+            // Reset the flag after showing project info
+            setTimeout(() => {
+                window.preventCameraReset = false;
+            }, 500);
         }
 
         // Add event listeners (only once!)
@@ -719,14 +693,50 @@ document.addEventListener('click', handleContentClick);
             btn.addEventListener('click', closeAllContainers);
         });
 
+        // Add direct click handler to project-info for closing when clicking on the background
+        projectInfo.addEventListener('click', function(event) {
+            // Only close if clicked directly on the project-info element (background)
+            // and not on any of its children
+            if (event.target === projectInfo) {
+                console.log('Direct click on project-info background');
+                closeAllContainers();
+                
+                // Set brief flag to prevent 3D model clicks from triggering
+                window.justClosedContainer = true;
+                setTimeout(() => {
+                    window.justClosedContainer = false;
+                }, 300);
+                
+                // Prevent event propagation
+                event.stopPropagation();
+            }
+        });
+
+        // Prevent clicks inside project-container from closing the container
+        const projectContainer = projectInfo.querySelector('.project-container');
+        projectContainer.addEventListener('click', function(event) {
+            // Stop propagation to prevent the click from reaching the project-info element
+            event.stopPropagation();
+        });
+
         // Navigation event listeners
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
+                // Stop event propagation to prevent handleOutsideClick from firing
+                e.stopPropagation();
+                
                 const section = e.target.getAttribute('data-section');
+                
+                // Set flag to prevent camera reset when switching sections
+                if (section === 'about' || section === 'contact' || section === 'projects') {
+                    window.preventCameraReset = true;
+                }
+                
                 closeAllContainers();
                 
                 switch(section) {
                     case 'intro':
+                        window.preventCameraReset = false; // Allow camera reset for home view
                         if (window.resetCamera) window.resetCamera();
                         break;
                     case 'about':
@@ -739,7 +749,44 @@ document.addEventListener('click', handleContentClick);
                         contactSection.classList.add('active');
                         break;
                 }
+                
+                // Reset the flag after a short delay
+                if (section !== 'intro') {
+                    setTimeout(() => {
+                        window.preventCameraReset = false;
+                    }, 500);
+                }
             });
+        });
+        
+        // Make the name-section open the about section when clicked
+        const nameSection = document.querySelector('.clickable-about');
+        nameSection.style.cursor = 'pointer';
+        
+        // Function to open about section
+        function openAboutSection() {
+            console.log('Opening about section function called');
+            closeAllContainers();
+            const aboutSection = document.getElementById('about-section');
+            aboutSection.classList.add('active');
+            console.log('About section classes after adding active:', aboutSection.classList.toString());
+        }
+        
+        nameSection.addEventListener('click', function(event) {
+            // Stop event propagation to prevent conflicts
+            event.stopPropagation();
+            
+            // Add console log to debug
+            console.log('Name section clicked');
+            
+            // Don't trigger if clicking on the LinkedIn link
+            if (event.target.closest('.linkedin-link')) {
+                console.log('LinkedIn link clicked, not opening about section');
+                return;
+            }
+            
+            // Call the function to open about section
+            openAboutSection();
         });
 
         // Expose functions for use by main.js

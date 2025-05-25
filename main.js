@@ -924,288 +924,312 @@ window.removeEventListener('mousemove', onMouseMove);
 
 // Completely rewrite the cursor handling approach
 function setupCursorHandling() {
-    console.log("Setting up improved cursor handling");
+    console.log("Setting up enhanced cross-platform cursor and interaction handling");
     
-    // Get the canvas element
     const canvas = renderer.domElement;
-    
-    // Force the default cursor on the canvas
     canvas.style.cursor = 'default';
     
-    // Add our own mouse move handler directly to the canvas
-    canvas.addEventListener('mousemove', (event) => {
-      // Default to normal cursor
-      canvas.style.cursor = 'default';
-      
-      // Skip if any panels are open
-      if (document.getElementById('project-info').classList.contains('active') || 
-          document.getElementById('about-section').classList.contains('active') || 
-          document.getElementById('contact-section').classList.contains('active')) {
-        return;
-      }
-      
-      // Calculate normalized mouse coordinates for raycasting
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = ((event.clientX - rect.left) / canvas.width) * 2 - 1;
-      const mouseY = -((event.clientY - rect.top) / canvas.height) * 2 + 1;
-      
-      // Set up temporary vector for raycasting
-      const tempMouse = new THREE.Vector2(mouseX, mouseY);
-      
-      // Use raycaster with our temporary mouse position
-      raycaster.setFromCamera(tempMouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-      
-      // Check for intersections with interactive objects
-      let hoveredInteractive = false;
-      
-      for (let i = 0; i < intersects.length; i++) {
-        let obj = intersects[i].object;
+    // Unified function to get normalized coordinates from any event type
+    function getNormalizedCoordinates(event, canvas) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
         
-        // Traverse up to find interactive parent
-        while (obj && !obj.userData?.isInteractive) {
-          obj = obj.parent;
+        // Handle different event types
+        if (event.touches && event.touches.length > 0) {
+            // Touch events
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        } else if (event.changedTouches && event.changedTouches.length > 0) {
+            // Touch end events
+            clientX = event.changedTouches[0].clientX;
+            clientY = event.changedTouches[0].clientY;
+        } else {
+            // Mouse/pointer events
+            clientX = event.clientX;
+            clientY = event.clientY;
         }
         
-        // If found interactive object, change cursor and exit loop
-        if (obj && obj.userData?.isInteractive) {
-          canvas.style.cursor = 'pointer';
-          hoveredInteractive = true;
-          break;
-        }
-      }
-      
-      // If no interactive objects found, ensure cursor is default
-      if (!hoveredInteractive) {
+        return {
+            x: ((clientX - rect.left) / rect.width) * 2 - 1,
+            y: -((clientY - rect.top) / rect.height) * 2 + 1
+        };
+    }
+    
+    // Enhanced cursor handling for hover effects
+    function handleHover(event) {
         canvas.style.cursor = 'default';
-      }
-    });
+        
+        // Skip if any panels are open
+        if (document.getElementById('project-info').classList.contains('active') || 
+            document.getElementById('about-section').classList.contains('active') || 
+            document.getElementById('contact-section').classList.contains('active')) {
+            return;
+        }
+        
+        // Get normalized coordinates
+        const coords = getNormalizedCoordinates(event, canvas);
+        const tempMouse = new THREE.Vector2(coords.x, coords.y);
+        
+        // Raycast to check for interactive objects
+        raycaster.setFromCamera(tempMouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        // Check for interactive objects
+        for (let i = 0; i < intersects.length; i++) {
+            let obj = intersects[i].object;
+            
+            while (obj && !obj.userData?.isInteractive) {
+                obj = obj.parent;
+            }
+            
+            if (obj && obj.userData?.isInteractive) {
+                canvas.style.cursor = 'pointer';
+                break;
+            }
+        }
+    }
     
-    // Also update the global mouse position for other functions
-    canvas.addEventListener('mousemove', (event) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / canvas.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / canvas.height) * 2 + 1;
-    });
-    
-    // Function to handle interaction (both mouse clicks and touch)
+    // Interaction cooldown to prevent multiple rapid clicks
     let interactionCooldown = false;
     
-    function handleInteraction(eventX, eventY, event) {
-      // If we're in cooldown, ignore this interaction
-      if (interactionCooldown) {
-        console.log("Interaction ignored due to cooldown");
-        return false;
-      }
-      
-      // Skip if any panels are open - don't prevent propagation in this case
-      if (document.getElementById('project-info').classList.contains('active') || 
-          document.getElementById('about-section').classList.contains('active') || 
-          document.getElementById('contact-section').classList.contains('active')) {
-        return false;
-      }
-      
-      // Prevent event from propagating further - only if no containers are open
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      
-      // Calculate normalized coordinates for raycasting
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = ((eventX - rect.left) / canvas.width) * 2 - 1;
-      const mouseY = -((eventY - rect.top) / canvas.height) * 2 + 1;
-      
-      // Skip if we just closed a container
-      if (window.justClosedContainer) {
-        return false;
-      }
-      
-      // Skip if any panels are open
-      if (document.getElementById('project-info').classList.contains('active') || 
-          document.getElementById('about-section').classList.contains('active') || 
-          document.getElementById('contact-section').classList.contains('active')) {
-        return false;
-      }
-      
-      // Set up raycaster with current mouse position
-      raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-      
-      // Check for interactions with models
-      for (let i = 0; i < intersects.length; i++) {
-        const object = intersects[i].object;
+    // Main interaction handler for all click types
+    function handleInteraction(event) {
+        console.log("Interaction detected:", event.type);
         
-        // Find the parent object with userData if available
-        let targetObj = object;
-        while (targetObj && !targetObj.userData?.isInteractive) {
-          targetObj = targetObj.parent;
+        // Prevent multiple rapid interactions
+        if (interactionCooldown) {
+            console.log("Interaction blocked by cooldown");
+            return false;
         }
         
-        if (targetObj && targetObj.userData?.isInteractive) {
-          console.log("Interaction with object ID:", targetObj.userData.projectId);
-          
-          // Set cooldown to prevent multiple interactions
-          interactionCooldown = true;
-          setTimeout(() => {
-            interactionCooldown = false;
-          }, 1000); // 1 second cooldown
-          
-          if (window.showProject) {
-            window.showProject(targetObj.userData.projectId);
-          } else {
-            console.error("showProject function not found in window object");
-          }
-          
-          // Animate camera to focus on this model
-          const modelPosition = new THREE.Vector3().copy(targetObj.position);
-          const angle = Math.random() * Math.PI;
-          const radius = 2.5;
-          const cameraX = modelPosition.x + Math.cos(angle) * radius;
-          const cameraZ = modelPosition.z + Math.sin(angle) * radius;
-          
-          moveCamera(
-            cameraX,
-            modelPosition.y + 1.5,
-            cameraZ,
-            modelPosition.x, modelPosition.y, modelPosition.z
-          );
-          
-          return true; // Interaction handled
+        // Skip if any panels are open
+        if (document.getElementById('project-info').classList.contains('active') || 
+            document.getElementById('about-section').classList.contains('active') || 
+            document.getElementById('contact-section').classList.contains('active')) {
+            console.log("Interaction blocked - panel is open");
+            return false;
         }
-      }
-      
-      return false; // No interaction
+        
+        // Skip if we just closed a container
+        if (window.justClosedContainer) {
+            console.log("Interaction blocked - just closed container");
+            return false;
+        }
+        
+        // Get normalized coordinates
+        const coords = getNormalizedCoordinates(event, canvas);
+        
+        // Update global mouse position for other functions
+        mouse.x = coords.x;
+        mouse.y = coords.y;
+        
+        // Raycast for interactive objects
+        raycaster.setFromCamera(new THREE.Vector2(coords.x, coords.y), camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        // Check for model interactions
+        for (let i = 0; i < intersects.length; i++) {
+            const object = intersects[i].object;
+            
+            let targetObj = object;
+            while (targetObj && !targetObj.userData?.isInteractive) {
+                targetObj = targetObj.parent;
+            }
+            
+            if (targetObj && targetObj.userData?.isInteractive) {
+                console.log("Interactive object clicked:", targetObj.userData.projectId);
+                
+                // Prevent event propagation
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Set cooldown
+                interactionCooldown = true;
+                setTimeout(() => {
+                    interactionCooldown = false;
+                }, 1000);
+                
+                // Show project
+                if (window.showProject) {
+                    window.showProject(targetObj.userData.projectId);
+                } else {
+                    console.error("showProject function not found");
+                }
+                
+                // Animate camera
+                const modelPosition = new THREE.Vector3().copy(targetObj.position);
+                const angle = Math.random() * Math.PI;
+                const radius = 2.5;
+                const cameraX = modelPosition.x + Math.cos(angle) * radius;
+                const cameraZ = modelPosition.z + Math.sin(angle) * radius;
+                
+                moveCamera(
+                    cameraX,
+                    modelPosition.y + 1.5,
+                    cameraZ,
+                    modelPosition.x, modelPosition.y, modelPosition.z
+                );
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
     
-    // Add click event handler directly to the canvas for better cross-device compatibility
-    canvas.addEventListener('click', (event) => {
-      // Check if any containers are active - if so, don't handle model interactions
-      if (document.getElementById('project-info').classList.contains('active') || 
-          document.getElementById('about-section').classList.contains('active') || 
-          document.getElementById('contact-section').classList.contains('active')) {
-        return;
-      }
-      
-      handleInteraction(event.clientX, event.clientY, event);
-    });
+    // === DESKTOP MOUSE EVENTS ===
+    canvas.addEventListener('mousemove', handleHover);
+    canvas.addEventListener('click', handleInteraction);
     
-    // Add touch support for mobile devices
+    // === MOBILE TOUCH EVENTS ===
+    // Touch start for immediate feedback
     canvas.addEventListener('touchstart', (event) => {
-      // Prevent default to avoid scrolling
-      event.preventDefault();
-      
-      if (event.touches.length > 0) {
+        console.log("Touch start detected");
+        
+        // Update hover state immediately
+        handleHover(event);
+        
+        // Store touch start time and position for tap detection
         const touch = event.touches[0];
-        handleInteraction(touch.clientX, touch.clientY, event);
-      }
-    }, { passive: false, capture: true });
+        canvas.touchStartTime = Date.now();
+        canvas.touchStartX = touch.clientX;
+        canvas.touchStartY = touch.clientY;
+        
+    }, { passive: false });
     
-    // Add MacOS-specific handlers
+    // Touch end for tap detection
+    canvas.addEventListener('touchend', (event) => {
+        console.log("Touch end detected");
+        
+        // Prevent default to avoid mouse events firing
+        event.preventDefault();
+        
+        // Check if this was a tap (not a drag)
+        if (canvas.touchStartTime && event.changedTouches.length > 0) {
+            const touchDuration = Date.now() - canvas.touchStartTime;
+            const touch = event.changedTouches[0];
+            const touchDistance = Math.sqrt(
+                Math.pow(touch.clientX - canvas.touchStartX, 2) + 
+                Math.pow(touch.clientY - canvas.touchStartY, 2)
+            );
+            
+            // Consider it a tap if it was quick and didn't move much
+            if (touchDuration < 500 && touchDistance < 20) {
+                console.log("Tap detected on mobile");
+                handleInteraction(event);
+            }
+        }
+        
+        // Clean up
+        delete canvas.touchStartTime;
+        delete canvas.touchStartX;
+        delete canvas.touchStartY;
+        
+    }, { passive: false });
     
-    // Add pointer events for better trackpad support on MacOS
+    // === POINTER EVENTS (Modern browsers, macOS trackpad) ===
     if ('PointerEvent' in window) {
-      console.log("Pointer events supported - adding MacOS trackpad support");
-      
-      // Handle pointer up events (for trackpad taps)
-      canvas.addEventListener('pointerup', function(event) {
-        // Only handle touch-type pointer events (trackpad)
-        if (event.pointerType === 'touch') {
-          console.log("MacOS trackpad tap detected");
-          
-          // Skip if any containers are active
-          if (document.getElementById('project-info').classList.contains('active') || 
-              document.getElementById('about-section').classList.contains('active') || 
-              document.getElementById('contact-section').classList.contains('active')) {
-            return;
-          }
-          
-          // Skip if we're in cooldown
-          if (interactionCooldown) {
-            return;
-          }
-          
-          // Handle the interaction
-          handleInteraction(event.clientX, event.clientY, event);
-        }
-      });
+        console.log("Pointer events supported - adding trackpad support");
+        
+        canvas.addEventListener('pointermove', (event) => {
+            // Only handle mouse-type pointers for hover (not touch)
+            if (event.pointerType === 'mouse') {
+                handleHover(event);
+            }
+        });
+        
+        canvas.addEventListener('pointerup', (event) => {
+            console.log("Pointer up:", event.pointerType);
+            
+            // Handle trackpad taps and mouse clicks
+            if (event.pointerType === 'touch' || event.pointerType === 'mouse') {
+                handleInteraction(event);
+            }
+        });
     }
     
-    // Add support for Force Touch on newer MacBooks
-    if (typeof window.onwebkitmouseforcechanged !== 'undefined') {
-      console.log("Force Touch support detected");
-      canvas.addEventListener('webkitmouseforcechanged', function(event) {
-        // Force Touch is being used (pressure sensitive click on newer MacBooks)
-        if (event.webkitForce > 2) { // Force click threshold
-          console.log("Force Touch detected on MacBook");
-          
-          // Skip if any containers are active
-          if (document.getElementById('project-info').classList.contains('active') || 
-              document.getElementById('about-section').classList.contains('active') || 
-              document.getElementById('contact-section').classList.contains('active')) {
-            return;
-          }
-          
-          // Handle as a regular click for interaction
-          handleInteraction(event.clientX, event.clientY, event);
-          
-          // Prevent default behavior
-          event.preventDefault();
-        }
-      });
-    }
+    // === MACOS SPECIFIC EVENTS ===
     
-    // Add support for MacOS Magic Trackpad two-finger tap (right-click)
-    canvas.addEventListener('contextmenu', function(event) {
-      // Prevent the default context menu
-      event.preventDefault();
-      
-      // Skip if any containers are active
-      if (document.getElementById('project-info').classList.contains('active') || 
-          document.getElementById('about-section').classList.contains('active') || 
-          document.getElementById('contact-section').classList.contains('active')) {
-        return;
-      }
-      
-      console.log("Detected right-click or two-finger tap on MacOS");
-      
-      // Handle as a regular click for interaction
-      handleInteraction(event.clientX, event.clientY, event);
+    // Right-click and two-finger tap support
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault(); // Prevent context menu
+        console.log("Context menu event (right-click/two-finger tap)");
+        handleInteraction(event);
     });
     
-    // Add gesture support for MacOS trackpads (pinch to zoom)
-    if ('ongestureend' in window) {
-      console.log("Gesture events supported - adding pinch-to-zoom for MacOS");
-      
-      canvas.addEventListener('gestureend', function(event) {
-        // Handle pinch gestures (common on MacOS trackpads)
-        if (event.scale !== 1) {
-          // Skip if any containers are active
-          if (document.getElementById('project-info').classList.contains('active') || 
-              document.getElementById('about-section').classList.contains('active') || 
-              document.getElementById('contact-section').classList.contains('active')) {
-            return;
-          }
-          
-          console.log("Pinch gesture detected on MacOS trackpad");
-          
-          // Adjust camera zoom based on gesture scale
-          if (controls && controls.zoom) {
-            const zoomFactor = event.scale > 1 ? 0.9 : 1.1;
-            controls.dollyIn(zoomFactor);
-            controls.update();
-          }
-          
-          // Prevent default to avoid browser zoom
-          event.preventDefault();
-        }
-      });
+    // Force Touch support (newer MacBooks)
+    if (typeof window.onwebkitmouseforcechanged !== 'undefined') {
+        console.log("Force Touch support detected");
+        canvas.addEventListener('webkitmouseforcechanged', (event) => {
+            if (event.webkitForce > 2) { // Force click threshold
+                console.log("Force Touch detected");
+                event.preventDefault();
+                handleInteraction(event);
+            }
+        });
     }
     
-    console.log("Cursor and touch handling setup complete");
+    // Gesture support for trackpad pinch-to-zoom
+    if ('ongestureend' in window) {
+        console.log("Gesture events supported");
+        canvas.addEventListener('gestureend', (event) => {
+            if (event.scale !== 1) {
+                console.log("Pinch gesture detected");
+                event.preventDefault();
+                
+                // Skip if panels are open
+                if (document.getElementById('project-info').classList.contains('active') || 
+                    document.getElementById('about-section').classList.contains('active') || 
+                    document.getElementById('contact-section').classList.contains('active')) {
+                    return;
+                }
+                
+                // Adjust camera zoom
+                if (controls) {
+                    const zoomFactor = event.scale > 1 ? 0.9 : 1.1;
+                    controls.dollyIn(zoomFactor);
+                    controls.update();
+                }
+            }
+        });
+    }
+    
+    // === ACCESSIBILITY ===
+    
+    // Keyboard support for accessibility
+    canvas.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            console.log("Keyboard interaction");
+            // Create a synthetic event at the center of the canvas
+            const rect = canvas.getBoundingClientRect();
+            const syntheticEvent = {
+                clientX: rect.left + rect.width / 2,
+                clientY: rect.top + rect.height / 2,
+                preventDefault: () => {},
+                stopPropagation: () => {}
+            };
+            handleInteraction(syntheticEvent);
+        }
+    });
+    
+    // Make canvas focusable for keyboard events
+    canvas.tabIndex = 0;
+    
+    console.log("Enhanced cross-platform interaction setup complete");
 }
-  
+
+// Function to update global mouse position
+function updateGlobalMousePosition(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+// Remove the old event listeners and set up the new ones
+window.removeEventListener('mousemove', onMouseMove);
+renderer.domElement.addEventListener('mousemove', updateGlobalMousePosition);
+
 // Call this function after the renderer is initialized
 setupCursorHandling();
-  
+
 console.log("3D portfolio initialization complete, animation loop started");

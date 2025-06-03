@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png">
+    <title>Timothy Park - 3D Portfolio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: white;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            touch-action: none; /* Prevents default touch behaviors */
+            user-select: none;  /* Prevents text selection */
+            -webkit-user-select: none;
+            -webkit-touch-callout: none; /* Prevents iOS callout menu */
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight */
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+            .header {
+        position: absolute;
+        top: 40px;
+        left: 40px;
+        pointer-events: auto;
+    }
+
+    .back-to-main {
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        pointer-events: auto;
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+    }
+
+    .back-to-main:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+
+            .name-section {
+                background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(5px); /* Creates a subtle blur effect */
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+
+            .name-section:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            }
+
+            .name {
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+
+            .title {
+                font-size: 1rem;
+                opacity: 0.9; /* Increased opacity for better visibility */
+            }
+
+            /* Styling for the LinkedIn icon */
+            .linkedin-link {
+                display: inline-block;
+                margin-top: 5px;
+                color: white;
+                opacity: 0.8;
+                transition: opacity 0.3s ease;
+            }
+
+            .linkedin-link:hover {
+                opacity: 1;
+            }
+
+            .linkedin-icon {
+                vertical-align: middle;
+            }
+        .nav {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .nav-item {
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        .controls-hint {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .progress-bar {
+            width: 200px;
+            height: 5px;
+            background-color: #111;
+            margin-top: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            width: 0%;
+            background-color: #4a5af8;
+            transition: width 0.3s ease;
+        }
+        .project-info {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            padding: 60px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+            overflow-y: auto;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .project-info.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .project-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .project-media {
+            width: 100%;
+            max-width: 800px;
+            margin: 30px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .project-media video {
+            width: 100%;
+            display: block;
+        }
+        .project-media img {
+            max-width: 300px; /* or whatever max-width you prefer */
+            width: 100%;
+            display: block;
+            margin: 0 auto; /* This centers the image if it's smaller than its container */
+        }
+        .project-content {
+            margin-top: 30px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .project-tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tech-tag {
+            background-color: rgba(74, 90, 248, 0.2);
+            border: 1px solid #4a5af8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .project-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .project-link {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #4a5af8;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .project-link:hover {
+            background-color: #3a48d8;
+            transform: scale(1.05);
+        }
+        .project-details {
+            margin: 25px 0;
+            line-height: 1.6;
+        }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .section-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s ease;
+            z-index: 20;
+        }
+        .section-content.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .section-content h2 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        .section-content p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .tech-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .skill-tag {
+            background-color: #4a5af8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group textarea {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .submit-btn {
+            background-color: #4a5af8;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #3a48d8;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .close-btn:hover {
+            opacity: 1;
+        }
+    </style>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js",
+        "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js",
+        "three/examples/jsm/objects/Sky.js": "https://unpkg.com/three@0.128.0/examples/jsm/objects/Sky.js",
+        "three/examples/jsm/libs/meshopt_decoder.module.js": "https://unpkg.com/three@0.128.0/examples/jsm/libs/meshopt_decoder.module.js"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div class="loading">
+        <h2>Loading Tim...</h2>
+        <p>Turn on browser graphics acceleration for a smooth experience...</p>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <div class="overlay">
+        <div class="header">
+            <div class="name-section clickable-about">
+                <div class="name">Timothy Park</div>
+                <div class="title">Developer & Project Manager</div>
+                <a href="https://www.linkedin.com/in/tpark252/" target="_blank" class="linkedin-link">
+                    <svg class="linkedin-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <a href="index.html" class="back-to-main">← Back to Main Portfolio</a>
+
+        <div class="nav">
+            <div class="nav-item" data-section="intro">Home</div>
+            <div class="nav-item" data-section="about">About</div>
+            <div class="nav-item" data-section="projects">Projects</div>
+            <div class="nav-item" data-section="contact">Contact</div>
+        </div>
+
+        <div class="controls-hint">
+            Click on the cats to explore my projects.
+        </div>
+
+        <div class="project-info" id="project-info">
+            <div class="project-container">
+                <button class="back-btn">&larr; Back to Home View</button>
+                <h1 class="project-title">Project Title</h1>
+                <div class="project-media" id="project-media">
+                    <!-- Media content will be inserted here -->
+                </div>
+                <div class="project-content">
+                    <div class="project-tech-tags" id="project-tech-tags">
+                        <!-- Tech stack tags will be inserted here -->
+                    </div>
+                    <p class="project-desc">Project description goes here. This is a brief overview of what the project is about and what technologies were used.</p>
+                    <div class="project-details" id="project-details">
+                        <!-- Additional project details will be inserted here -->
+                    </div>
+                    <div class="project-links">
+                        <a href="#" class="project-link project-github-link" target="_blank">View Code</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-content" id="about-section">
+            <button class="close-btn">&times;</button>
+            <h2>About Me</h2>
+            <p>Hi, I'm Timothy Park. I'm a Developer and Project Manager, who happens to also be a lifelong student who enjoys learning and progression.</p>
+            <p>With a background in developing applications and managing technical projects, I bring a unique perspective to every project I work on. My approach combines technical expertise with a strong focus on user experience and business objectives.</p>
+            <p>I have experience working with Generative AI, Project and Product Management.</p>
+            <p>My hobbies consist mainly of some form of exercise; whether through bboying, lifting at the gym, snowboarding, or participating in a team sport like basketball.</p>
+            <p>Other than that, I'm usually enjoying my nights lounging and spending quality time with friends and family.</p>
+
+            <h3>Skills & Technologies</h3>
+
+            <div class="tech-skills">
+                <div class="skill-tag">JavaScript</div>
+                <div class="skill-tag">React</div>
+                <div class="skill-tag">Three.js</div>
+                <div class="skill-tag">HTML/CSS</div>
+                <div class="skill-tag">Project Management</div>
+                <div class="skill-tag">UI/UX Design</div>
+                <div class="skill-tag">Node.js</div>
+                <div class="skill-tag">Git</div>
+                <div class="skill-tag">Python</div>
+                <div class="skill-tag">AI</div>
+                <div class="skill-tag">Vite</div>
+                <div class="skill-tag">Flask</div>
+                <div class="skill-tag">Firebase</div>
+            </div>
+            
+            <div class="contact-links">
+                <h3>Connect With Me</h3>
+                <a href="https://www.linkedin.com/in/tpark252/" target="_blank" class="social-link linkedin-btn">
+                    <svg class="linkedin-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    </svg>
+                    <SPAN STYLE="color:#FFFFFF">LinkedIn Profile</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section-content" id="contact-section">
+            <button class="close-btn">&times;</button>
+            <h2>Get In Touch</h2>
+            <p>Have a project in mind or just want to connect? Feel free to reach out to me using the form below.</p>
+            
+            <div class="contact-form">
+                <form id="contactForm" action="https://formspree.io/f/xnnddwnj" method="POST">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" placeholder="Write your message here..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+    <script>
+
+        const projects = [
+            {
+                title: "Generative AI Summarizer",
+                description: "A full-stack web application that transcribes and summarizes lecture videos using OpenAI's Whisper and GPT-4 models, built with React, Flask, and Tailwind CSS.",
+                media: {
+                    type: "video",
+                    url: "/assets/videos/lecturesum.mp4"  
+                },
+                techStack: ["React", "Vite", "Tailwind CSS", "Flask", "OpenAI GPT-4", "Whisper API", "jsPDF"],
+                githubLink: "https://github.com/tpark252/summarizer", 
+                details: "This application allows users to upload lecture videos for automatic transcription and summarization. The Flask backend handles audio extraction, compression, and processing through OpenAI's latest SDKs. The simple responsive frontend features light/dark mode toggle, real-time progress tracking, intuitive file upload interface, and smooth transitions for optimal user experience."
+            },
+            {
+                title: "Bicep Curl Counter",
+                description: "A web application that uses computer vision and TensorFlow.js to count bicep curl repetitions in real-time through your webcam, providing instant feedback on form.",
+                media: {
+                    type: "video",
+                    url: "/assets/videos/bicep curl.mp4" 
+                },
+                techStack: ["HTML/CSS", "JavaScript", "TensorFlow.js", "MoveNet", "Pose Detection API"],
+                githubLink: "https://github.com/tpark252/Bicep-Curl", 
+                details: "This browser-based application leverages the TensorFlow.js MoveNet model to detect and track body poses through a webcam. It precisely monitors arm angles during bicep curls, counting repetitions for both left and right arms independently. The app features real-time skeleton visualization with color-coded feedback, performance optimizations for smooth frame rates, and a straightforward user interface."
+            },
+            {
+                title: "This Portfolio Website",
+                description: "An interactive 3D portfolio website showcasing creative work with Three.js animations and smooth user interface.",
+                media: {
+                    type: "image",
+                    url: "/assets/images/bbang.jpg"
+                },
+                techStack: ["Three.js", "JavaScript", "HTML/CSS"],
+                link: "#",
+                githubLink: "https://github.com/tpark252/portfolio", 
+                details: "This portfolio website uses 3D graphics to create an immersive user experience. The interactive elements include a custom navigation system, animated project showcases, and responsive design that works across devices. Performance optimization ensures fast loading even with complex 3D elements."
+            },
+            {
+                "title": "NBA Stats AI Assistant",
+                "description": "An intelligent conversational bot that provides real-time NBA statistics, game results, player data, and team information using ESPN's reverse engineered API and OpenAI's GPT-4.",
+                "media": {
+                    "type": "video",
+                    "url": "/assets/videos/ESPN.mp4"
+                },
+                "techStack": ["React.js", "Node.js", "Express", "OpenAI API", "ESPN API"],
+                "githubLink": "https://github.com/tpark252/nbastats",
+                "details": "The NBA Stats AI Assistant creates a seamless conversational interface for accessing comprehensive basketball statistics. Built with React for the frontend and Express for the backend, this application integrates a reverse engineered ESPN API for real-time data with GPT-4 for natural language processing. Features include game score visualization, player statistics analysis, team schedule tracking, and league standings. The bot intelligently formats data for readability, with custom styling for game results and player stats cards. It handles complex queries about specific games, players, and dates while maintaining conversation context for follow-up questions."
+            },
+            {
+                "title": "Gestural Mixer",
+                "description": "An innovative audio mixing interface controlled through hand gestures, allowing for intuitive and expressive control of audio parameters.",
+                "media": {
+                    "type": "video",
+                    "url": "/assets/videos/gesturalfx.mp4"
+                },
+                "techStack": ["JavaScript", "WebAudio API", "TensorFlow.js", "Hand Pose Detection", "Three.js"],
+                "githubLink": "https://github.com/tpark252/gesturalmixer",
+                "details": "The Gestural Mixer project enables musicians and audio engineers to control mixing parameters using hand movements captured through a webcam. Built with TensorFlow.js for hand tracking and WebAudio API for sound processing, this application transforms physical gestures into precise audio control. The interface provides real-time visual feedback of hand positions and corresponding audio parameter changes, creating an immersive and intuitive mixing experience."
+            }
+        ];
+        const projectInfo = document.getElementById('project-info');
+        const aboutSection = document.getElementById('about-section');
+        const contactSection = document.getElementById('contact-section');
+        let sceneClickHandler = null;
+
+        function closeAllContainers() {
+            // Stop any playing videos
+            const projectMedia = document.getElementById('project-media');
+            const videos = projectMedia.querySelectorAll('video');
+            videos.forEach(video => {
+                video.pause();
+                video.currentTime = 0;
+            });
+            
+            // Close all containers
+            projectInfo.classList.remove('active');
+            aboutSection.classList.remove('active');
+            contactSection.classList.remove('active');
+            
+            // Show navigation when returning to 3D view
+            document.querySelector('.nav').style.display = 'flex';
+            
+            // Only reset camera if we're actually closing to return to the home view
+            // and not just switching between views
+            if (window.resetCamera && !window.preventCameraReset) {
+                window.resetCamera();
+            }
+            
+            // Reset the preventCameraReset flag after a short delay
+            setTimeout(() => {
+                window.preventCameraReset = false;
+            }, 100);
+        }
+
+        // Single handler for clicks outside containers
+        function handleOutsideClick(event) {
+            // Check which containers are active
+            const isProjectActive = projectInfo.classList.contains('active');
+            const isAboutActive = aboutSection.classList.contains('active');
+            const isContactActive = contactSection.classList.contains('active');
+            
+            // If no containers are active, do nothing
+            if (!isProjectActive && !isAboutActive && !isContactActive) return;
+            
+            // Check if clicked on elements that should be ignored
+            if (event.target.classList.contains('close-btn') || 
+                event.target.classList.contains('back-btn') ||
+                event.target.classList.contains('nav-item') ||
+                event.target.closest('.nav-item') ||
+                event.target.closest('.name-section')) {
+                return;
+            }
+            
+            // Special handling for project-info: close if clicked directly on the project-info element
+            // but not on its child project-container
+            if (isProjectActive && event.target === projectInfo) {
+                console.log('Clicked on project-info background, closing');
+                closeAllContainers();
+                
+                // Set brief flag to prevent 3D model clicks from triggering
+                window.justClosedContainer = true;
+                setTimeout(() => {
+                    window.justClosedContainer = false;
+                }, 300);
+                return;
+            }
+            
+            // For about and contact sections, close if clicked outside the container
+            if ((isAboutActive && !aboutSection.contains(event.target)) || 
+                (isContactActive && !contactSection.contains(event.target))) {
+                console.log('Clicked outside about/contact section, closing');
+                closeAllContainers();
+                
+                // Set brief flag to prevent 3D model clicks from triggering
+                window.justClosedContainer = true;
+                setTimeout(() => {
+                    window.justClosedContainer = false;
+                }, 300);
+            }
+        }
+
+        // Clean function for showing project info
+        function showProjectInfo(projectId) {
+            // Set flag to prevent camera reset during container closing
+            window.preventCameraReset = true;
+            
+            const project = projects[projectId];
+            
+            // Set basic info
+            projectInfo.querySelector('.project-title').textContent = project.title;
+            projectInfo.querySelector('.project-desc').textContent = project.description;
+            
+            const githubLink = projectInfo.querySelector('.project-github-link');
+            if (project.githubLink) {
+                githubLink.href = project.githubLink;
+                githubLink.style.display = 'inline-block';
+            } else {
+                githubLink.style.display = 'none';
+            }
+            
+            const projectMedia = document.getElementById('project-media');
+            projectMedia.innerHTML = '';
+            if (project.media) {
+                if (project.media.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = project.media.url;
+                    img.alt = project.title;
+                    projectMedia.appendChild(img);
+                } else if (project.media.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = project.media.url;
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.muted = true;
+                    projectMedia.appendChild(video);
+                }
+            }
+            
+            // Add tech stack tags
+            const techTagsContainer = projectInfo.querySelector('#project-tech-tags');
+            techTagsContainer.innerHTML = '';
+            if (project.techStack && project.techStack.length > 0) {
+                project.techStack.forEach(tech => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tech-tag';
+                    tag.textContent = tech;
+                    techTagsContainer.appendChild(tag);
+                });
+            }
+            
+            // Add detailed description
+            const detailsContainer = projectInfo.querySelector('#project-details');
+            detailsContainer.innerHTML = '';
+            if (project.details) {
+                const details = document.createElement('p');
+                details.textContent = project.details;
+                detailsContainer.appendChild(details);
+            }
+            
+            closeAllContainers();
+            
+            // Show the project info panel
+            projectInfo.classList.add('active');
+            
+            // Hide navigation during full screen view
+            document.querySelector('.nav').style.display = 'none';
+            
+            // Reset the flag after showing project info
+            setTimeout(() => {
+                window.preventCameraReset = false;
+            }, 500);
+        }
+
+        // Add event listeners (only once!)
+        document.addEventListener('click', handleOutsideClick);
+        document.querySelector('.back-btn').addEventListener('click', closeAllContainers);
+        document.querySelectorAll('.close-btn').forEach(btn => {
+            btn.addEventListener('click', closeAllContainers);
+        });
+
+        // Add direct click handler to project-info for closing when clicking on the background
+        projectInfo.addEventListener('click', function(event) {
+            // Only close if clicked directly on the project-info element (background)
+            // and not on any of its children
+            if (event.target === projectInfo) {
+                console.log('Direct click on project-info background');
+                closeAllContainers();
+                
+                // Set brief flag to prevent 3D model clicks from triggering
+                window.justClosedContainer = true;
+                setTimeout(() => {
+                    window.justClosedContainer = false;
+                }, 300);
+                
+                // Prevent event propagation
+                event.stopPropagation();
+            }
+        });
+
+        // Prevent clicks inside project-container from closing the container
+        const projectContainer = projectInfo.querySelector('.project-container');
+        projectContainer.addEventListener('click', function(event) {
+            // Stop propagation to prevent the click from reaching the project-info element
+            event.stopPropagation();
+        });
+
+        // Navigation event listeners
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Stop event propagation to prevent handleOutsideClick from firing
+                e.stopPropagation();
+                
+                const section = e.target.getAttribute('data-section');
+                
+                // Set flag to prevent camera reset when switching sections
+                if (section === 'about' || section === 'contact' || section === 'projects') {
+                    window.preventCameraReset = true;
+                }
+                
+                closeAllContainers();
+                
+                switch(section) {
+                    case 'intro':
+                        window.preventCameraReset = false; // Allow camera reset for home view
+                        if (window.resetCamera) window.resetCamera();
+                        break;
+                    case 'about':
+                        aboutSection.classList.add('active');
+                        break;
+                    case 'projects':
+                        if (window.viewAllProjects) window.viewAllProjects();
+                        break;
+                    case 'contact':
+                        contactSection.classList.add('active');
+                        break;
+                }
+                
+                // Reset the flag after a short delay
+                if (section !== 'intro') {
+                    setTimeout(() => {
+                        window.preventCameraReset = false;
+                    }, 500);
+                }
+            });
+        });
+        
+        // Make the name-section open the about section when clicked
+        const nameSection = document.querySelector('.clickable-about');
+        nameSection.style.cursor = 'pointer';
+        
+        // Function to open about section
+        function openAboutSection() {
+            console.log('Opening about section function called');
+            closeAllContainers();
+            const aboutSection = document.getElementById('about-section');
+            aboutSection.classList.add('active');
+            console.log('About section classes after adding active:', aboutSection.classList.toString());
+        }
+        
+        nameSection.addEventListener('click', function(event) {
+            // Stop event propagation to prevent conflicts
+            event.stopPropagation();
+            
+            // Add console log to debug
+            console.log('Name section clicked');
+            
+            // Don't trigger if clicking on the LinkedIn link
+            if (event.target.closest('.linkedin-link')) {
+                console.log('LinkedIn link clicked, not opening about section');
+                return;
+            }
+            
+            // Call the function to open about section
+            openAboutSection();
+        });
+
+        // Expose functions for use by main.js
+        window.showProject = showProjectInfo;
+        window.registerClickHandler = function(handler) {
+            sceneClickHandler = handler;
+        };
+
+        // Contact form handling
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const submitBtn = form.querySelector('.submit-btn');
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+            
+            if (name && email && message) {
+                // Disable button and show loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+                
+                // Use the Fetch API to submit the form
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Show success message
+                        alert('Thank you for your message! I\'ll get back to you soon.');
+                        
+                        // Clear form
+                        form.reset();
+                        
+                        // Reset button
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Send Message';
+                        
+                        // Hide contact section
+                        document.getElementById('contact-section').classList.remove('active');
+                    } else {
+                        response.json().then(data => {
+                            let errorMessage = 'Sorry, there was a problem submitting your form';
+                            
+                            if (data.errors) {
+                                errorMessage = data.errors.map(error => error.message).join(', ');
+                            }
+                            
+                            alert(errorMessage);
+                            
+                            // Reset button
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Send Message';
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Sorry, there was an error sending your message. Please try again later.');
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message';
+                });
+            } else {
+                alert('Please fill out all fields.');
+            }
+        });
+
+        // Loading screen handling
+        const loadingScreen = document.querySelector('.loading');
+        const progressBar = document.getElementById('progress');
+        let progress = 0;
+        
+        const loadingInterval = setInterval(() => {
+            progress += 5;
+            progressBar.style.width = `${progress}%`;
+            
+            if (progress >= 100) {
+                clearInterval(loadingInterval);
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                }, 500);
+            }
+        }, 100);
+
+        // This work is based on "cat" (https://sketchfab.com/3d-models/cat-ddf80c6ba168449682c9de3939d8fd18) by Stephengury (https://sketchfab.com/Stephengury) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+        // This work is based on "Cats (Gaju&Annie)" (https://sketchfab.com/3d-models/cats-gajuannie-1646599e9b2845c7b2eddadc897edf37) by Yu (https://sketchfab.com/FFT_kedar) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+        // This work is based on "Maxwell the cat (Dingus)" (https://sketchfab.com/3d-models/maxwell-the-cat-dingus-2ca7f3c1957847d6a145fc35de9046b0) by bean(alwayshasbean) (https://sketchfab.com/alwayshasbean) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+        // This work is based on "Oiiaioooooiai Cat" (https://sketchfab.com/3d-models/oiiaioooooiai-cat-30d27bf7fb224849b76e208a6eccdb36) by Zhuier (https://sketchfab.com/Zhuier) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+    </script>
+</body>
+</html> 
